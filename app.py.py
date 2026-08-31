@@ -178,7 +178,7 @@ is_rtl = "Hebrew" in selected_lang or "עברית" in selected_lang
 dir_val = "rtl" if is_rtl else "ltr"
 text_align_val = "right" if is_rtl else "left"
 
-# --- Ultimate Input, Expander & Dark Mode CSS Fixes ---
+# --- Ultimate Calendar, Input & Dark Mode CSS Fixes ---
 st.markdown(
     f"""
     <style>
@@ -197,11 +197,34 @@ st.markdown(
     }}
 
     /* תיקון מוחלט לכל תיבות הטקסט, הבחירה, תאריכים ומספרים */
-    input, textarea, select, div[data-baseweb="select"] > div, div[data-baseweb="input"] > div, div[data-baseweb="calendar"] {{
+    input, textarea, select, div[data-baseweb="select"] > div, div[data-baseweb="input"] > div {{
         background-color: {input_bg_color} !important;
         color: {input_text_color} !important;
         -webkit-text-fill-color: {input_text_color} !important;
         border-color: {widget_border} !important;
+    }}
+
+    /* תיקון ספציפי לפופאפ של בחירת תאריך (Calendar / Datepicker Popover) */
+    div[data-baseweb="popover"], div[data-baseweb="calendar"], div[data-baseweb="menu"] {{
+        background-color: {input_bg_color} !important;
+        color: {input_text_color} !important;
+        border: 1px solid {widget_border} !important;
+        border-radius: 14px !important;
+    }}
+
+    div[data-baseweb="calendar"] * {{
+        color: {input_text_color} !important;
+        background-color: transparent !important;
+    }}
+
+    div[data-baseweb="calendar"] button {{
+        color: {input_text_color} !important;
+        background-color: transparent !important;
+        border-radius: 50% !important;
+    }}
+    
+    div[data-baseweb="calendar"] button:hover {{
+        background-color: rgba(0, 122, 255, 0.3) !important;
     }}
 
     /* תיקון ספציפי לטקסט בתוך שדות בחירה ותאריכים */
@@ -227,13 +250,7 @@ st.markdown(
     }}
 
     /* תיקון מלא ללשוניות הארוחות (Expanders) במצב לילה */
-    div[data-testid="stExpander"] {{
-        background-color: {input_bg_color} !important;
-        border: 1px solid {widget_border} !important;
-        border-radius: 14px !important;
-    }}
-    
-    details[data-testid="stExpander"] {{
+    div[data-testid="stExpander"], details[data-testid="stExpander"] {{
         background-color: {input_bg_color} !important;
         border: 1px solid {widget_border} !important;
         border-radius: 14px !important;
@@ -268,20 +285,12 @@ st.markdown(
         color: #ffffff !important;
     }}
 
-    /* תפריטי בחירה נפתחים (Menu Popovers) במצב לילה */
-    ul[data-baseweb="menu"],
-    div[data-baseweb="popover"] {{
-        background-color: {input_bg_color} !important;
-        border: 1px solid {widget_border} !important;
-    }}
-    ul[data-baseweb="menu"] li,
-    li[role="option"] {{
+    /* תפריטי בחירה נפתחים במצב לילה */
+    ul[data-baseweb="menu"] li, li[role="option"] {{
         color: {input_text_color} !important;
         background-color: {input_bg_color} !important;
     }}
-    ul[data-baseweb="menu"] li:hover,
-    li[role="option"]:hover,
-    li[aria-selected="true"] {{
+    ul[data-baseweb="menu"] li:hover, li[role="option"]:hover, li[aria-selected="true"] {{
         background-color: rgba(0, 122, 255, 0.2) !important;
         color: {input_text_color} !important;
     }}
