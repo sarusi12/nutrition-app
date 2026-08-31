@@ -148,10 +148,11 @@ text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
 widget_border = "rgba(255, 255, 255, 0.1)" if is_dark else "rgba(0, 0, 0, 0.08)"
 
+# תיקון ה-CSS כך שלא יגרום לקונטיינרים להידחס לטור אנכי (מניעת באג הפסים)
 st.markdown(
     f"""
     <style>
-    html, body, [data-testid="stAppViewContainer"] {{
+    .stApp {{
         direction: {direction};
         text-align: {'right' if direction == 'rtl' else 'left'};
         background-color: {bg_color};
