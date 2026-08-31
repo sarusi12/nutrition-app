@@ -178,7 +178,7 @@ is_rtl = "Hebrew" in selected_lang or "עברית" in selected_lang
 dir_val = "rtl" if is_rtl else "ltr"
 text_align_val = "right" if is_rtl else "left"
 
-# --- Ultimate Input & Dark Mode CSS Fixes ---
+# --- Ultimate Input, Expander & Dark Mode CSS Fixes ---
 st.markdown(
     f"""
     <style>
@@ -196,16 +196,16 @@ st.markdown(
         color: {text_color} !important;
     }}
 
-    /* תיקון מוחלט לכל תיבות הטקסט, הבחירה והמספרים (Input / Selectbox / NumberInput) */
-    input, textarea, select, div[data-baseweb="select"] > div, div[data-baseweb="input"] > div {{
+    /* תיקון מוחלט לכל תיבות הטקסט, הבחירה, תאריכים ומספרים */
+    input, textarea, select, div[data-baseweb="select"] > div, div[data-baseweb="input"] > div, div[data-baseweb="calendar"] {{
         background-color: {input_bg_color} !important;
         color: {input_text_color} !important;
         -webkit-text-fill-color: {input_text_color} !important;
         border-color: {widget_border} !important;
     }}
 
-    /* תיקון ספציפי לטקסט המוצג בתוך שדות בחירה (Selectboxes / Dropdowns) */
-    div[data-baseweb="select"] span, div[data-baseweb="select"] div, div[data-baseweb="input"] input {{
+    /* תיקון ספציפי לטקסט בתוך שדות בחירה ותאריכים */
+    div[data-baseweb="select"] span, div[data-baseweb="select"] div, div[data-baseweb="input"] input, input[type="text"], input[type="date"] {{
         color: {input_text_color} !important;
         -webkit-text-fill-color: {input_text_color} !important;
     }}
@@ -224,6 +224,29 @@ st.markdown(
     
     div[data-testid="stSidebarNav"] {{
         direction: {dir_val} !important;
+    }}
+
+    /* תיקון מלא ללשוניות הארוחות (Expanders) במצב לילה */
+    div[data-testid="stExpander"] {{
+        background-color: {input_bg_color} !important;
+        border: 1px solid {widget_border} !important;
+        border-radius: 14px !important;
+    }}
+    
+    details[data-testid="stExpander"] {{
+        background-color: {input_bg_color} !important;
+        border: 1px solid {widget_border} !important;
+        border-radius: 14px !important;
+    }}
+
+    summary[data-testid="stExpanderSummary"], .streamlit-expanderHeader {{
+        background-color: {input_bg_color} !important;
+        border-radius: 14px !important;
+        color: {text_color} !important;
+    }}
+    
+    summary[data-testid="stExpanderSummary"] * {{
+        color: {text_color} !important;
     }}
 
     /* עיצוב מושלם לכפתורי הפעולה הראשיים ותגובה לריחוף/לחיצה */
@@ -312,17 +335,6 @@ st.markdown(
         margin: 0 !important;
         opacity: 0.95;
         line-height: 1.3;
-        color: {text_color} !important;
-    }}
-
-    .streamlit-expanderHeader {{
-        background-color: {widget_bg} !important;
-        border: 1px solid {widget_border} !important;
-        border-radius: 14px !important;
-        direction: {dir_val} !important;
-        text-align: {text_align_val} !important;
-        font-size: 1.1em !important;
-        font-weight: bold !important;
         color: {text_color} !important;
     }}
 
