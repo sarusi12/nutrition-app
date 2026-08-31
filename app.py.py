@@ -44,6 +44,7 @@ TRANSLATIONS = {
         "date_header": "📅 תאריך ויעדים",
         "tab_log": "📝 יומן אכילה",
         "tab_search": "🔍 חיפוש והוספה",
+        "tab_water": "🚰 מעקב מים",
         "tab_workouts": "💪 אימונים ושריפת קלוריות",
         "tab_history": "📅 היסטוריה ויומן",
         "tab_photos": "📸 תמונות מעקב",
@@ -105,6 +106,7 @@ TRANSLATIONS = {
         "date_header": "📅 Date & Goals",
         "tab_log": "📝 Food Log",
         "tab_search": "🔍 Search & Add",
+        "tab_water": "🚰 Water Tracking",
         "tab_workouts": "💪 Workouts & Calories",
         "tab_history": "📅 History & Calendar",
         "tab_photos": "📸 Progress Photos",
@@ -728,8 +730,10 @@ selected_date = st.sidebar.date_input("בחר תאריך", date.today()).strftim
 goals_res = supabase.table("daily_goals").select("*").eq("user_id", user_id).eq("date", selected_date).execute()
 user_goals = goals_res.data[0] if goals_res.data else {"target_calories": 2200, "target_protein": 170, "target_carbs": 220, "target_fat": 60}
 
-# יצירת הלשוניות
-tab_log, tab_auto_add, tab_workouts, tab_history, tab_photos, tab_camera, tab_ai, tab_settings = st.tabs([t["tab_log"], t["tab_search"], t["tab_workouts"], t["tab_history"], t["tab_photos"], t["tab_camera"], t["tab_ai"], t["tab_settings"]])
+# יצירת הלשוניות (כולל לשונית נפרדת ועצמאית למעקב מים)
+tab_log, tab_auto_add, tab_water, tab_workouts, tab_history, tab_photos, tab_camera, tab_ai, tab_settings = st.tabs([
+    t["tab_log"], t["tab_search"], t["tab_water"], t["tab_workouts"], t["tab_history"], t["tab_photos"], t["tab_camera"], t["tab_ai"], t["tab_settings"]
+])
 
 with tab_auto_add:
     st.subheader("🔍 חיפוש והוספת מאכל או שתייה")
@@ -824,6 +828,78 @@ with tab_auto_add:
                 st.rerun()
             else:
                 st.warning("נא לבחור לפחות פריט אחד להוספה.")
+
+# --- לשונית מעקב מים נפרדת ---
+with tab_water:
+    st.subheader("🚰 מעקב שתיית מים יומית")
+    st.write(f"ניהול ומעקב שתייה עבור תאריך: **{selected_date}**")
+    
+    log_res_water = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
+    entries_water = log_res_water.data
+    total_water_ml = sum(e["amount_grams"] for e in entries_water if any(w in e["food_items"]["name"] for w in ["מים", "בקבוק מים"]))
+    water_glasses = round(total_water_ml / 250.0, 1)
+
+    def add_water_to_log_tab(amount_val):
+        w_item_name = f"מים בהתאמה אישית ({amount_val} מל')" if amount_val not in [250, 500, 1500] else ("מים (כוס / 250 מ\"ל)" if amount_val == 250 else ("בקבוק מים מינרליים (500 מ\"ל)" if amount_val == 500 else "בקבוק מים גדול (1.5 ליטר)"))
+        existing_w = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", w_item_name).execute()
+        w_food_id = existing_w.data[0]["id"] if existing_w.data else supabase.table("food_items").insert({"user_id": user_id, "name": w_item_name, "calories_per_100g": 0.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 0.0}).execute().data[0]["id"]
+        supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": w_food_id, "amount_grams": float(amount_val), "meal_type": t["breakfast"]}).execute()
+        st.rerun()
+
+    wc_info, wc_b1, wc_b2, wc_b3, wc_b4 = st.columns(5)
+    
+    with wc_info:
+        st.markdown(f"""
+        <div class="ios-widget" style="margin-bottom: 0px;">
+            <h4>💧 סה''כ מים היום</h4>
+            <h2>{int(total_water_ml)}</h2>
+            <p>מל' ({water_glasses} כוסות)</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with wc_b1:
+        if st.button("➕ 250 מ\"ל\n\n(כוס)", key="w_tab_btn_250"):
+            add_water_to_log_tab(250)
+            
+    with wc_b2:
+        if st.button("➕ 500 מ\"ל\n\n(בקבוק)", key="w_tab_btn_500"):
+            add_water_to_log_tab(500)
+            
+    with wc_b3:
+        if st.button("➕ 1.5 ליטר\n\n(ענק)", key="w_tab_btn_1500"):
+            add_water_to_log_tab(1500)
+            
+    with wc_b4:
+        if st.button("⚙️ מותאם\n\nאישית", key="w_tab_btn_custom_toggle"):
+            st.session_state["show_custom_water_tab"] = not st.session_state.get("show_custom_water_tab", False)
+            st.rerun()
+
+    if st.session_state.get("show_custom_water_tab", False):
+        st.markdown("<div style='background: rgba(0,122,255,0.05); padding: 16px; border-radius: 20px; border: 1px solid rgba(0,122,255,0.2); margin-top: 14px;'>", unsafe_allow_html=True)
+        c_cust_1, c_cust_2 = st.columns([2, 1])
+        with c_cust_1:
+            custom_ml_val = st.number_input("הכנס כמות מים במיליליטר (מל'):", min_value=50, max_value=5000, value=300, step=50, key="custom_water_tab_input_amount")
+        with c_cust_2:
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("הוסף מים ליומן", key="save_custom_water_tab_btn"):
+                add_water_to_log_tab(custom_ml_val)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    st.divider()
+    st.subheader("📋 פירוט צריכת מים ומשקאות ליום זה")
+    water_entries_only = [e for e in entries_water if any(w in e["food_items"]["name"] for w in ["מים", "בקבוק מים"])]
+    if water_entries_only:
+        for we in water_entries_only:
+            w_amt = we["amount_grams"]
+            w_name = we["food_items"]["name"]
+            cw_name, cw_amt, cw_del = st.columns([3, 2, 1])
+            cw_name.markdown(f"<span style='font-size: 1.1em; font-weight: 600;'>💧 {w_name}</span>", unsafe_allow_html=True)
+            cw_amt.markdown(f"<span style='font-size: 1.05em;'>{int(w_amt)} מ\"ל</span>", unsafe_allow_html=True)
+            if cw_del.button("🗑️", key=f"del_water_tab_{we['id']}"):
+                supabase.table("food_log").delete().eq("id", we["id"]).execute()
+                st.rerun()
+    else:
+        st.info("עדיין לא תועדו מים היום. לחץ על אחד הכפתורים למעלה כדי להוסיף.")
 
 with tab_workouts:
     st.subheader(t["workouts_header"])
@@ -1109,9 +1185,6 @@ with tab_log:
     consumed_c = sum(e["food_items"]["carbs_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
     consumed_f = sum(e["food_items"]["fat_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
 
-    total_water_ml = sum(e["amount_grams"] for e in entries if any(w in e["food_items"]["name"] for w in ["מים", "בקבוק מים"]))
-    water_glasses = round(total_water_ml / 250.0, 1)
-
     workouts_res_summary = supabase.table("workouts").select("*").eq("user_id", user_id).eq("date", selected_date).execute()
     total_burned_cals = sum(w.get("calories_burned", 0) for w in workouts_res_summary.data) if workouts_res_summary.data else 0
 
@@ -1243,55 +1316,6 @@ with tab_log:
                     st.info("אין מאכלים בארוחה זו.")
     else:
         st.info("No logs for today.")
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # --- שורת מים מושלמת מתחת לשורות הארוחות: 5 וידג'טים ריבועיים תואמים באותו גודל ---
-    wc_info, wc_b1, wc_b2, wc_b3, wc_b4 = st.columns(5)
-    
-    with wc_info:
-        st.markdown(f"""
-        <div class="ios-widget" style="margin-bottom: 0px;">
-            <h4>💧 מים יומי</h4>
-            <h2>{int(total_water_ml)}</h2>
-            <p>מל' ({water_glasses} כוסות)</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    def add_water_to_log(amount_val):
-        w_item_name = f"מים בהתאמה אישית ({amount_val} מל')" if amount_val not in [250, 500, 1500] else ("מים (כוס / 250 מ\"ל)" if amount_val == 250 else ("בקבוק מים מינרליים (500 מ\"ל)" if amount_val == 500 else "בקבוק מים גדול (1.5 ליטר)"))
-        existing_w = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", w_item_name).execute()
-        w_food_id = existing_w.data[0]["id"] if existing_w.data else supabase.table("food_items").insert({"user_id": user_id, "name": w_item_name, "calories_per_100g": 0.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 0.0}).execute().data[0]["id"]
-        supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": w_food_id, "amount_grams": float(amount_val), "meal_type": t["breakfast"]}).execute()
-        st.rerun()
-
-    with wc_b1:
-        if st.button("➕ 250 מ\"ל\n\n(כוס)", key="w_btn_250"):
-            add_water_to_log(250)
-            
-    with wc_b2:
-        if st.button("➕ 500 מ\"ל\n\n(בקבוק)", key="w_btn_500"):
-            add_water_to_log(500)
-            
-    with wc_b3:
-        if st.button("➕ 1.5 ליטר\n\n(ענק)", key="w_btn_1500"):
-            add_water_to_log(1500)
-            
-    with wc_b4:
-        if st.button("⚙️ מותאם\n\nאישית", key="w_btn_custom_toggle"):
-            st.session_state["show_custom_water"] = not st.session_state.get("show_custom_water", False)
-            st.rerun()
-
-    if st.session_state.get("show_custom_water", False):
-        st.markdown("<div style='background: rgba(0,122,255,0.05); padding: 16px; border-radius: 20px; border: 1px solid rgba(0,122,255,0.2); margin-top: 14px;'>", unsafe_allow_html=True)
-        c_cust_1, c_cust_2 = st.columns([2, 1])
-        with c_cust_1:
-            custom_ml_val = st.number_input("הכנס כמות מים במיליליטר (מל'):", min_value=50, max_value=5000, value=300, step=50, key="custom_water_input_amount")
-        with c_cust_2:
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("הוסף מים ליומן", key="save_custom_water_btn"):
-                add_water_to_log(custom_ml_val)
-        st.markdown("</div>", unsafe_allow_html=True)
 
 with tab_ai:
     st.subheader("🤖 AI Advisor")
