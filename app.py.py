@@ -145,7 +145,7 @@ text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
 widget_border = "rgba(255, 255, 255, 0.1)" if is_dark else "rgba(0, 0, 0, 0.08)"
 
-# --- Clean CSS Styling (No Global RTL to prevent tooltip breaking) ---
+# --- Clean CSS Styling ---
 st.markdown(
     f"""
     <style>
@@ -486,13 +486,21 @@ with tab_settings:
         new_password = st.text_input(t["new_password"], type="password")
         submit_account = st.form_submit_button(t["update_account"])
         
-        ,במידה ובחרת לשמור, תעשה Save.
-
----
-
-### שלב 3: הפעלה נקייה מהנתיב המדויק
-1. כנס לתיקיית `nutrition` בשולחן העבודה.
-2. לחץ על שורת הכתובת למעלה, מחק הכל, כתוב **`cmd`** ולץ **Enter**.
-3. בחלון השחור שנפתח, הקלד את הפקודה הבאה בדיוק ולחץ **Enter**:
-   ```bash
-   streamlit run app.py
+        if submit_account:
+            update_attrs = {}
+            if new_email and new_email != st.session_state["user"].email:
+                update_attrs["email"] = new_email.strip()
+            if new_password:
+                if len(new_password) >= 6:
+                    update_attrs["password"] = new_password
+                else:
+                    st.error("Password must be at least 6 characters.")
+            
+            if update_attrs:
+                try:
+                    supabase.auth.update_user(update_attrs)
+                    st.success("Account updated successfully!")
+                except Exception as e:
+                    st.error(f"Error updating account: {e}")
+            else:
+                st.info("No changes made.")
