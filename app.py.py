@@ -167,7 +167,7 @@ text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
 widget_border = "rgba(255, 255, 255, 0.1)" if is_dark else "rgba(0, 0, 0, 0.08)"
 
-# --- Clean CSS Styling (תיקון מלא לתפריט צד/סרגלים שנתקעים באמצע המסך באייפון וספארי) ---
+# --- Clean CSS Styling (תיקון מוחלט לתפריט צד שנסגר ונתקע) ---
 st.markdown(
     f"""
     <style>
@@ -180,10 +180,16 @@ st.markdown(
         -webkit-text-size-adjust: 100%;
     }}
     
-    /* תיקון קריטי לסרגלים ותפריטי צד באייפון/ספארי שלא יישארו באמצע המסך */
+    /* מניעת הופעת טקסט תקוע כאשר תפריט הצד סגור במחשב ובנייד */
+    section[data-testid="stSidebar"][aria-expanded="false"] {{
+        visibility: hidden !important;
+        width: 0px !important;
+        min-width: 0px !important;
+        pointer-events: none !important;
+    }}
+    
     section[data-testid="stSidebar"] {{
         background-color: {bg_color} !important;
-        position: relative !important;
         z-index: 999999 !important;
     }}
     
