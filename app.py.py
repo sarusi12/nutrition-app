@@ -258,17 +258,6 @@ st.markdown(
         line-height: 1.4;
     }}
 
-    .meal-summary-widget {{
-        background: {widget_bg};
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
-        border: 1px solid {widget_border};
-        border-radius: 16px;
-        padding: 12px;
-        text-align: center;
-        margin-bottom: 10px;
-    }}
-
     .streamlit-expanderHeader {{
         background-color: {widget_bg} !important;
         border: 1px solid {widget_border} !important;
@@ -1083,7 +1072,7 @@ with tab_camera:
             st.success("הארוחה נוספה!")
             st.rerun()
 
-# --- מסך יומן אכילה ראשי (כולל מעקב מים קומפקטי ומעוצב באלגנטיות) ---
+# --- מסך יומן אכילה ראשי (כולל מעקב מים מותאם ומדויק) ---
 with tab_log:
     st.subheader(f"תיעוד ארוחות ושתייה לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
@@ -1102,36 +1091,60 @@ with tab_log:
 
     st.divider()
     
-    # --- ווידג'ט מעקב מים קומפקטי ומעוצב עם כפתורי פעולה מותאמים ---
-    st.markdown(f"""
-    <div class="ios-widget" style="min-height: 80px; padding: 14px; margin-bottom: 12px; background: linear-gradient(135deg, rgba(0, 122, 255, 0.08), rgba(88, 86, 214, 0.08)); border: 1px solid rgba(0, 122, 255, 0.25);">
-        <h4 style="color: #007AFF; font-size: 1.1em !important; margin-bottom: 2px !important;">💧 מעקב מים יומי</h4>
-        <h2 style="font-size: 1.7em !important; margin: 2px 0 !important;">{int(total_water_ml)} מ''ל &nbsp;<span style="font-size: 0.6em; opacity: 0.8; font-weight: normal;">({water_glasses} כוסות | יעד: 3,000 מ''ל)</span></h2>
-    </div>
-    """, unsafe_allow_html=True)
+    # --- מעקב מים בצורת ריבוע גדול (כמו שאר סיכומי הרכיבים) ולידו 4 כפתורים מרובעים ---
+    wc_info, wc_b1, wc_b2, wc_b3, wc_b4 = st.columns([1.5, 1, 1, 1, 1])
+    
+    with wc_info:
+        st.markdown(f"""
+        <div class="ios-widget" style="background: linear-gradient(135deg, rgba(0, 122, 255, 0.08), rgba(88, 86, 214, 0.08)); border: 1px solid rgba(0, 122, 255, 0.25); margin-bottom: 0px;">
+            <h4 style="color: #007AFF;">💧 מים יומי</h4>
+            <h2>{int(total_water_ml)}</h2>
+            <p>מל' ({water_glasses} כוסות)</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-    wb1, wb2, wb3 = st.columns(3)
-    with wb1:
-        if st.button("➕ כוס (250 מ\"ל)", use_container_width=True):
-            w_item_name = "מים (כוס / 250 מ\"ל)"
-            existing_w = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", w_item_name).execute()
-            w_food_id = existing_w.data[0]["id"] if existing_w.data else supabase.table("food_items").insert({"user_id": user_id, "name": w_item_name, "calories_per_100g": 0.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 0.0}).execute().data[0]["id"]
-            supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": w_food_id, "amount_grams": 250.0, "meal_type": t["breakfast"]}).execute()
-            st.rerun()
-    with wb2:
-        if st.button("➕ בקבוק (500 מ\"ל)", use_container_width=True):
-            w_item_name = "בקבוק מים מינרליים (500 מ\"ל)"
-            existing_w = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", w_item_name).execute()
-            w_food_id = existing_w.data[0]["id"] if existing_w.data else supabase.table("food_items").insert({"user_id": user_id, "name": w_item_name, "calories_per_100g": 0.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 0.0}).execute().data[0]["id"]
-            supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": w_food_id, "amount_grams": 500.0, "meal_type": t["lunch"]}).execute()
-            st.rerun()
-    with wb3:
-        if st.button("➕ ענק (1.5 ליטר)", use_container_width=True):
-            w_item_name = "בקבוק מים גדול (1.5 ליטר)"
-            existing_w = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", w_item_name).execute()
-            w_food_id = existing_w.data[0]["id"] if existing_w.data else supabase.table("food_items").insert({"user_id": user_id, "name": w_item_name, "calories_per_100g": 0.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 0.0}).execute().data[0]["id"]
-            supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": w_food_id, "amount_grams": 1500.0, "meal_type": t["dinner"]}).execute()
-            st.rerun()
+    def add_water_to_log(amount_val):
+        w_item_name = f"מים בהתאמה אישית ({amount_val} מל')" if amount_val not in [250, 500, 1500] else ("מים (כוס / 250 מ\"ל)" if amount_val == 250 else ("בקבוק מים מינרליים (500 מ\"ל)" if amount_val == 500 else "בקבוק מים גדול (1.5 ליטר)"))
+        existing_w = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", w_item_name).execute()
+        w_food_id = existing_w.data[0]["id"] if existing_w.data else supabase.table("food_items").insert({"user_id": user_id, "name": w_item_name, "calories_per_100g": 0.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 0.0}).execute().data[0]["id"]
+        supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": w_food_id, "amount_grams": float(amount_val), "meal_type": t["breakfast"]}).execute()
+        st.rerun()
+
+    with wc_b1:
+        st.markdown("<div style='font-size: 0.85em; text-align: center; margin-bottom: 2px; font-weight: 600;'>כוס</div>", unsafe_allow_html=True)
+        if st.button("＋ 250", use_container_width=True, key="w_btn_250"):
+            add_water_to_log(250)
+            
+    with wc_b2:
+        st.markdown("<div style='font-size: 0.85em; text-align: center; margin-bottom: 2px; font-weight: 600;'>בקבוק</div>", unsafe_allow_html=True)
+        if st.button("＋ 500", use_container_width=True, key="w_btn_500"):
+            add_water_to_log(500)
+            
+    with wc_b3:
+        st.markdown("<div style='font-size: 0.85em; text-align: center; margin-bottom: 2px; font-weight: 600;'>ענק</div>", unsafe_allow_html=True)
+        if st.button("＋ 1.5L", use_container_width=True, key="w_btn_1500"):
+            add_water_to_log(1500)
+            
+    with wc_b4:
+        st.markdown("<div style='font-size: 0.85em; text-align: center; margin-bottom: 2px; font-weight: 600;'>מותאם אישית</div>", unsafe_allow_html=True)
+        custom_water_open = st.button("⚙️ בחר", use_container_width=True, key="w_btn_custom_toggle")
+
+    if "show_custom_water" not in st.session_state:
+        st.session_state["show_custom_water"] = False
+        
+    if custom_water_open:
+        st.session_state["show_custom_water"] = not st.session_state["show_custom_water"]
+        
+    if st.session_state.get("show_custom_water", False):
+        st.markdown("<div style='background: rgba(0,122,255,0.05); padding: 12px; border-radius: 12px; border: 1px solid rgba(0,122,255,0.2); margin-top: 10px;'>", unsafe_allow_html=True)
+        c_cust_1, c_cust_2 = st.columns([2, 1])
+        with c_cust_1:
+            custom_ml_val = st.number_input("הכנס כמות מים במיליליטר (מל'):", min_value=50, max_value=5000, value=300, step=50, key="custom_water_input_amount")
+        with c_cust_2:
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("הוסף ליומן", use_container_width=True, key="save_custom_water_btn"):
+                add_water_to_log(custom_ml_val)
+        st.markdown("</div>", unsafe_allow_html=True)
 
     st.divider()
     st.subheader(t["daily_summary"])
