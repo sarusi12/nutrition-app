@@ -204,26 +204,26 @@ st.markdown(
         border-color: {widget_border} !important;
     }}
 
-    /* תיקון ספציפי לפופאפ של בחירת תאריך (Calendar / Datepicker Popover) */
-    div[data-baseweb="popover"], div[data-baseweb="calendar"], div[data-baseweb="menu"] {{
+    /* תיקון מלא ומוחלט לפופאפ של לוח השנה והתאריכים בכל המערכת */
+    div[data-baseweb="popover"], div[data-baseweb="calendar"], div[data-baseweb="menu"], 
+    div[role="dialog"], div[role="application"] {{
         background-color: {input_bg_color} !important;
         color: {input_text_color} !important;
         border: 1px solid {widget_border} !important;
         border-radius: 14px !important;
     }}
 
-    div[data-baseweb="calendar"] * {{
+    div[data-baseweb="calendar"] *, div[role="dialog"] *, div[role="application"] * {{
         color: {input_text_color} !important;
         background-color: transparent !important;
     }}
 
-    div[data-baseweb="calendar"] button {{
+    div[data-baseweb="calendar"] button, div[role="dialog"] button {{
         color: {input_text_color} !important;
         background-color: transparent !important;
-        border-radius: 50% !important;
     }}
     
-    div[data-baseweb="calendar"] button:hover {{
+    div[data-baseweb="calendar"] button:hover, div[role="dialog"] button:hover {{
         background-color: rgba(0, 122, 255, 0.3) !important;
     }}
 
@@ -266,8 +266,8 @@ st.markdown(
         color: {text_color} !important;
     }}
 
-    /* עיצוב מושלם לכפתורי הפעולה הראשיים ותגובה לריחוף/לחיצה */
-    div.stButton > button {{
+    /* עיצוב מושלם לכפתורי הפעולה הראשיים ותגובה לריחוף/לחיצה (כולל כפתור שמור בהגדרות) */
+    div.stButton > button, div[data-testid="stFormSubmitButton"] > button {{
         background-color: rgba(0, 122, 255, 0.15) !important;
         color: {text_color} !important;
         border: 1px solid rgba(0, 122, 255, 0.4) !important;
@@ -275,12 +275,12 @@ st.markdown(
         font-weight: 700 !important;
         transition: all 0.2s ease-in-out !important;
     }}
-    div.stButton > button:hover {{
+    div.stButton > button:hover, div[data-testid="stFormSubmitButton"] > button:hover {{
         background-color: rgba(0, 122, 255, 0.35) !important;
         border-color: rgba(0, 122, 255, 0.8) !important;
         color: #ffffff !important;
     }}
-    div.stButton > button:active, div.stButton > button:focus {{
+    div.stButton > button:active, div.stButton > button:focus, div[data-testid="stFormSubmitButton"] > button:active {{
         background-color: rgba(0, 122, 255, 0.5) !important;
         color: #ffffff !important;
     }}
