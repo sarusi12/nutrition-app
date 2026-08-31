@@ -556,7 +556,7 @@ selected_date = st.sidebar.date_input("בחר תאריך", date.today()).strftim
 goals_res = supabase.table("daily_goals").select("*").eq("user_id", user_id).eq("date", selected_date).execute()
 user_goals = goals_res.data[0] if goals_res.data else {"target_calories": 2200, "target_protein": 170, "target_carbs": 220, "target_fat": 60}
 
-# יצירת הלשוניות (כולל לשונית היסטוריה ויומן חדשה)
+# יצירת הלשוניות
 tab_log, tab_auto_add, tab_workouts, tab_history, tab_camera, tab_ai, tab_settings = st.tabs([t["tab_log"], t["tab_search"], t["tab_workouts"], t["tab_history"], t["tab_camera"], t["tab_ai"], t["tab_settings"]])
 
 with tab_auto_add:
@@ -708,13 +708,12 @@ with tab_workouts:
 
 # --- מסך היסטוריה ויומן חדש ---
 with tab_history:
-    st.subheader("📅 יومان היסטוריה ובדיקת עמידה ביעדים לפי תאריך")
+    st.subheader("📅 יומן היסטוריה ובדיקת עמידה ביעדים לפי תאריך")
     history_date = st.date_input("בחר תאריך לבדיקה:", date.today(), key="history_calendar_picker")
     history_date_str = history_date.strftime("%Y-%m-%d")
 
     st.markdown(f"### סיכום עבור תאריך: **{history_date_str}**")
 
-    # שליפת נתוני תזונה לתאריך הנבחר
     hist_log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", history_date_str).execute()
     hist_entries = hist_log_res.data
 
@@ -723,12 +722,10 @@ with tab_history:
     h_c = sum(e["food_items"]["carbs_per_100g"] * e["amount_grams"] / 100.0 for e in hist_entries)
     h_f = sum(e["food_items"]["fat_per_100g"] * e["amount_grams"] / 100.0 for e in hist_entries)
 
-    # שליפת אימונים לתאריך הנבחר
     hist_workouts_res = supabase.table("workouts").select("*").eq("user_id", user_id).eq("date", history_date_str).execute()
     hist_workouts = hist_workouts_res.data
     h_burned = sum(w["calories_burned"] for w in hist_workouts) if hist_workouts else 0
 
-    # שליפת יעדים לתאריך
     hist_goals_res = supabase.table("daily_goals").select("*").eq("user_id", user_id).eq("date", history_date_str).execute()
     h_goals = hist_goals_res.data[0] if hist_goals_res.data else user_goals
 
@@ -768,18 +765,26 @@ with tab_history:
 
     st.divider()
 
-    # חיווי אימונים לתאריך
     st.subheader("🏋️ סטטוס אימונים בתאריך זה:")
     if hist_workouts:
-        st.success(f"✅ התאמנת ב-{history_date_str}! בוצעו {len(hist_workouts)} אימונים ששרפו סך הכל **{h_burned} קלוריות**.")
-        for hw in hist_workouts:
-            st.write(- f"• **{hw['workout_type']}** | משך: {hw['duration_minutes']} דקות | שריפה: {hw['calories_burned']} קל'")
+        st.success(f"✅ התאמנת ב-{history_date_str}! בוצעו {len(hist_workouts)} אימונים.")
+        
+        # הצגת אימונים כקוביות מעוצבות בסגנון מקרונוטריאנטים
+        w_cols = st.columns(len(hist_workouts))
+        for idx, hw in enumerate(hist_workouts):
+            with w_cols[idx]:
+                st.markdown(f"""
+                <div class="ios-widget">
+                    <h4 style="margin: 0 0 10px 0;">🏋️ {hw['workout_type']}</h4>
+                    <h2 style="margin: 0 0 10px 0; font-size: 1.5em;">{hw['calories_burned']} קל'</h2>
+                    <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">משך: {hw['duration_minutes']} דקות</p>
+                </div>
+                """, unsafe_allow_html=True)
     else:
         st.warning(f"⚠️ לא דווחו אימונים בתאריך {history_date_str}.")
 
     st.divider()
 
-    # חיווי עמידה ביעדי תזונה
     st.subheader("🎯 סטטוס עמידה ביעדי תזונה:")
     cal_diff = h_cal - h_goals['target_calories']
     if abs(cal_diff) <= 150:
@@ -815,7 +820,7 @@ with tab_log:
     consumed_c = sum(e["food_items"]["carbs_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
     consumed_f = sum(e["food_items"]["fat_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
 
-    workouts_res_summary = supabase.table("workouts").select("calories_burned").eq("user_id", user_id).eq("date", selected_date).execute()
+    workouts_res_summary = supabase.table("workouts").select("*").eq("user_id", user_id).eq("date", selected_date).execute()
     total_burned_cals = sum(w["calories_burned"] for w in workouts_res_summary.data) if workouts_res_summary.data else 0
 
     st.divider()
@@ -855,8 +860,19 @@ with tab_log:
         </div>
         """, unsafe_allow_html=True)
 
-    if total_burned_cals > 0:
-        st.info(f"💡 שרפת היום **{total_burned_cals} קלוריות** באימונים. סך קלוריות נטו (אכילה פחות אימונים): **{round(consumed_cal - total_burned_cals, 1)} קלוריות**.")
+    # הצגת קוביות אימונים ביומן היומי אם בוצעו אימונים היום
+    if workouts_res_summary.data:
+        st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
+        w_log_cols = st.columns(len(workouts_res_summary.data))
+        for idx, w_item in enumerate(workouts_res_summary.data):
+            with w_log_cols[idx]:
+                st.markdown(f"""
+                <div class="ios-widget">
+                    <h4 style="margin: 0 0 10px 0;">🏋️ {w_item['workout_type']}</h4>
+                    <h2 style="margin: 0 0 10px 0; font-size: 1.5em;">{w_item['calories_burned']} קל'</h2>
+                    <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">משך: {w_item['duration_minutes']} דקות</p>
+                </div>
+                """, unsafe_allow_html=True)
 
     st.divider()
     
