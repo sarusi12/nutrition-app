@@ -4,12 +4,13 @@ import urllib.parse
 from datetime import date, datetime
 from supabase import create_client, Client
 
-# --- Streamlit Page Config & Mobile Viewport Fix for Safari ---
+# --- Streamlit Page Config & Mobile/Cross-Browser Viewport Fix ---
 st.set_page_config(page_title="NutriFlow / מחשבון תזונה", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown(
     """
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     """,
     unsafe_allow_html=True
 )
@@ -171,7 +172,7 @@ text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
 widget_border = "rgba(255, 255, 255, 0.1)" if is_dark else "rgba(0, 0, 0, 0.08)"
 
-# --- Clean CSS Styling ---
+# --- Universal Cross-Browser CSS Styling ---
 st.markdown(
     f"""
     <style>
@@ -182,6 +183,7 @@ st.markdown(
         direction: rtl;
         text-align: right;
         -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
     }}
     
     section[data-testid="stSidebar"][aria-expanded="false"] {{
@@ -206,6 +208,8 @@ st.markdown(
         background-color: {widget_bg};
         padding: 8px;
         border-radius: 18px;
+        display: -webkit-box;
+        display: -ms-flexbox;
         display: flex;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
@@ -219,23 +223,35 @@ st.markdown(
         white-space: nowrap;
         font-size: 1.15em !important;
         font-weight: 700 !important;
+        -ms-flex-negative: 0;
         flex-shrink: 0;
     }}
 
     .ios-widget {{
         background: linear-gradient(135deg, rgba(0, 122, 255, 0.06), rgba(88, 86, 214, 0.06));
-        backdrop-filter: blur(20px);
+        background-color: {widget_bg};
         -webkit-backdrop-filter: blur(20px);
+        backdrop-filter: blur(20px);
         border: 1px solid rgba(0, 122, 255, 0.2);
         border-radius: 20px;
         padding: 22px 16px;
+        -webkit-box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.12);
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.12);
         margin-bottom: 14px;
         text-align: center;
         min-height: 155px;
+        display: -webkit-box;
+        display: -ms-flexbox;
         display: flex;
+        -webkit-box-orient: vertical;
+        -webkit-box-direction: normal;
+        -ms-flex-direction: column;
         flex-direction: column;
+        -webkit-box-pack: center;
+        -ms-flex-pack: center;
         justify-content: center;
+        -webkit-box-align: center;
+        -ms-flex-align: center;
         align-items: center;
         word-break: break-word;
     }}
@@ -261,11 +277,10 @@ st.markdown(
         line-height: 1.4;
     }}
 
-    /* עיצוב ייעודי אך ורק לכפתורי הוספת מים כך שיראו כמו הווידג'טים */
     div[data-testid="column"] div.stButton > button[key*="w_btn_"] {{
         background: linear-gradient(135deg, rgba(0, 122, 255, 0.06), rgba(88, 86, 214, 0.06)) !important;
-        backdrop-filter: blur(20px) !important;
         -webkit-backdrop-filter: blur(20px) !important;
+        backdrop-filter: blur(20px) !important;
         border: 1px solid rgba(0, 122, 255, 0.2) !important;
         border-radius: 20px !important;
         color: {text_color} !important;
@@ -273,16 +288,28 @@ st.markdown(
         width: 100% !important;
         font-weight: 700 !important;
         font-size: 1.15em !important;
+        -webkit-box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.12) !important;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.12) !important;
+        display: -webkit-box !important;
+        display: -ms-flexbox !important;
         display: flex !important;
+        -webkit-box-orient: vertical !important;
+        -webkit-box-direction: normal !important;
+        -ms-flex-direction: column !important;
         flex-direction: column !important;
+        -webkit-box-pack: center !important;
+        -ms-flex-pack: center !important;
         justify-content: center !important;
+        -webkit-box-align: center !important;
+        -ms-flex-align: center !important;
         align-items: center !important;
+        -webkit-transition: all 0.2s ease-in-out !important;
         transition: all 0.2s ease-in-out !important;
     }}
     
     div[data-testid="column"] div.stButton > button[key*="w_btn_"]:hover {{
         border-color: rgba(0, 122, 255, 0.5) !important;
+        -webkit-transform: translateY(-2px);
         transform: translateY(-2px);
     }}
 
@@ -298,10 +325,15 @@ st.markdown(
 
     @media screen and (max-width: 768px) {{
         .row-widget.stHorizontal {{
+            -webkit-box-orient: vertical !important;
+            -webkit-box-direction: normal !important;
+            -ms-flex-direction: column !important;
             flex-direction: column !important;
         }}
         div[data-testid="column"] {{
             width: 100% !important;
+            -webkit-box-flex: 100% !important;
+            -ms-flex: 100% !important;
             flex: 100% !important;
             min-width: unset !important;
             margin-bottom: 10px;
@@ -837,7 +869,6 @@ with tab_water:
     log_res_water = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
     entries_water = log_res_water.data
     
-    # סינון מדויק המזהה אך ורק מים אמיתיים (מונע זיהוי שגוי של מאכלים כמו טחינה)
     water_entries_only = [e for e in entries_water if e["food_items"] and any(w in e["food_items"]["name"] for w in ["מים", "בקבוק מים"]) and "טחינה" not in e["food_items"]["name"]]
     
     total_water_ml = sum(e["amount_grams"] for e in water_entries_only)
@@ -1370,4 +1401,3 @@ with tab_settings:
                     st.error(f"Error updating account: {e}")
             else:
                 st.info("No changes made.")
-                
