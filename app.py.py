@@ -236,11 +236,45 @@ st.markdown(
         border-radius: 12px;
         padding: 10px 16px !important;
         color: {text_color} !important;
+        background-color: transparent !important;
         white-space: nowrap;
         font-size: 1.05em !important;
         font-weight: 700 !important;
         -ms-flex-negative: 0;
         flex-shrink: 0;
+    }}
+
+    /* התיקון המרכזי: הלשונית הפעילה/נבחרת מקבלת מ-baseweb רקע בהיר כברירת
+       מחדל, וזה מה שגרם לטקסט לבן להיעלם עליו במצב לילה. נותנים לה רקע
+       מפורש שמתאים לתמה הנוכחית + טקסט מודגש עם ניגודיות גבוהה. */
+    .stTabs [data-baseweb="tab"][aria-selected="true"] {{
+        background-color: rgba(10, 132, 255, 0.22) !important;
+        color: {text_color} !important;
+        border: 1px solid rgba(10, 132, 255, 0.5) !important;
+    }}
+    .stTabs [data-baseweb="tab"] p,
+    .stTabs [data-baseweb="tab"] div {{
+        color: inherit !important;
+    }}
+
+    /* תפריטי בחירה נפתחים (selectbox / multiselect) מוצגים ע"י Streamlit
+       דרך "portal" מחוץ למבנה הרגיל של האפליקציה, ולכן ה-CSS הרגיל שלנו
+       לא תמיד מגיע אליהם ונשאר רקע בהיר של ברירת המחדל -> טקסט לבן על
+       רקע בהיר = בלתי קריא. מכסים אותם במפורש כאן. */
+    ul[data-baseweb="menu"],
+    div[data-baseweb="popover"] {{
+        background-color: {bg_color} !important;
+        border: 1px solid {widget_border} !important;
+    }}
+    ul[data-baseweb="menu"] li,
+    li[role="option"] {{
+        color: {text_color} !important;
+        background-color: {bg_color} !important;
+    }}
+    ul[data-baseweb="menu"] li:hover,
+    li[role="option"]:hover,
+    li[aria-selected="true"] {{
+        background-color: {widget_bg} !important;
     }}
 
     .ios-widget {{
