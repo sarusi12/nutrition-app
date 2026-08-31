@@ -259,7 +259,7 @@ st.markdown(
         line-height: 1.4;
     }}
 
-    /* עיצוב ייעודי אך ורק לכפתורי הוספת מים (Water Buttons) כך שיראו כמו הווידג'טים */
+    /* עיצוב ייעודי אך ורק לכפתורי הוספת מים כך שיראו כמו הווידג'טים */
     div[data-testid="column"] div.stButton > button[key*="w_btn_"] {{
         background: linear-gradient(135deg, rgba(0, 122, 255, 0.06), rgba(88, 86, 214, 0.06)) !important;
         backdrop-filter: blur(20px) !important;
@@ -1098,7 +1098,7 @@ with tab_camera:
             st.success("הארוחה נוספה!")
             st.rerun()
 
-# --- מסך יומן אכילה ראשי (כולל מעקב מים מרובע ומושלם ב-5 עמודות שוות) ---
+# --- מסך יומן אכילה ראשי ---
 with tab_log:
     st.subheader(f"תיעוד ארוחות ושתייה לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
@@ -1116,8 +1116,45 @@ with tab_log:
     total_burned_cals = sum(w.get("calories_burned", 0) for w in workouts_res_summary.data) if workouts_res_summary.data else 0
 
     st.divider()
-    
-    # --- שורת מים מושלמת: 5 וידג'טים ריבועיים תואמים באותו גודל ובאותו צבע בדיוק ---
+    st.subheader(t["daily_summary"])
+
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.markdown(f"""
+        <div class="ios-widget">
+            <h4>🔥 קלוריות</h4>
+            <h2>{round(consumed_cal, 1)}</h2>
+            <p>יעד: {user_goals['target_calories']} | אימונים: -{total_burned_cals}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"""
+        <div class="ios-widget">
+            <h4>🥩 חלבון</h4>
+            <h2>{round(consumed_p, 1)}g</h2>
+            <p>יעד: {user_goals['target_protein']}g</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with col3:
+        st.markdown(f"""
+        <div class="ios-widget">
+            <h4>🍞 פחמימות</h4>
+            <h2>{round(consumed_c, 1)}g</h2>
+            <p>יעד: {user_goals['target_carbs']}g</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with col4:
+        st.markdown(f"""
+        <div class="ios-widget">
+            <h4>🥑 שומנים</h4>
+            <h2>{round(consumed_f, 1)}g</h2>
+            <p>יעד: {user_goals['target_fat']}g</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # --- שורת מים מושלמת בתחתית הסיכום היומי: 5 וידג'טים ריבועיים תואמים באותו גודל ---
     wc_info, wc_b1, wc_b2, wc_b3, wc_b4 = st.columns(5)
     
     with wc_info:
@@ -1163,43 +1200,6 @@ with tab_log:
             if st.button("הוסף מים ליומן", key="save_custom_water_btn"):
                 add_water_to_log(custom_ml_val)
         st.markdown("</div>", unsafe_allow_html=True)
-
-    st.divider()
-    st.subheader(t["daily_summary"])
-
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.markdown(f"""
-        <div class="ios-widget">
-            <h4>🔥 קלוריות</h4>
-            <h2>{round(consumed_cal, 1)}</h2>
-            <p>יעד: {user_goals['target_calories']} | אימונים: -{total_burned_cals}</p>
-        </div>
-        """, unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"""
-        <div class="ios-widget">
-            <h4>🥩 חלבון</h4>
-            <h2>{round(consumed_p, 1)}g</h2>
-            <p>יעד: {user_goals['target_protein']}g</p>
-        </div>
-        """, unsafe_allow_html=True)
-    with col3:
-        st.markdown(f"""
-        <div class="ios-widget">
-            <h4>🍞 פחמימות</h4>
-            <h2>{round(consumed_c, 1)}g</h2>
-            <p>יעד: {user_goals['target_carbs']}g</p>
-        </div>
-        """, unsafe_allow_html=True)
-    with col4:
-        st.markdown(f"""
-        <div class="ios-widget">
-            <h4>🥑 שומנים</h4>
-            <h2>{round(consumed_f, 1)}g</h2>
-            <p>יעד: {user_goals['target_fat']}g</p>
-        </div>
-        """, unsafe_allow_html=True)
 
     st.divider()
     
