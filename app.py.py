@@ -40,7 +40,7 @@ TRANSLATIONS = {
         "goal": "מה המטרה שלך?",
         "calc_goals": "חשב יעדים ושמור",
         "logout": "התנתק",
-        "connected_as": "מחובר ك:",
+        "connected_as": "מחובר כ:",
         "date_header": "📅 תאריך ויעדים",
         "tab_log": "📝 יומן אכילה",
         "tab_search": "🔍 חיפוש והוספה",
@@ -168,7 +168,7 @@ text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
 widget_border = "rgba(255, 255, 255, 0.1)" if is_dark else "rgba(0, 0, 0, 0.08)"
 
-# --- Clean CSS Styling (מוסדר במיוחד עבור Safari ומובייל באייפון) ---
+# --- Clean CSS Styling (מתוקן במיוחד למניעת התנגשות טקסט בספארי ומובייל) ---
 st.markdown(
     f"""
     <style>
@@ -187,12 +187,36 @@ st.markdown(
         -webkit-backdrop-filter: blur(20px);
         border: 1px solid {widget_border};
         border-radius: 20px;
-        padding: 14px;
+        padding: 16px 12px;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
-        margin-bottom: 10px;
+        margin-bottom: 12px;
         text-align: center;
-        min-height: 110px;
+        min-height: 125px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
         word-break: break-word;
+    }}
+
+    .ios-widget h4 {{
+        font-size: 0.95em;
+        margin: 0 0 6px 0 !important;
+        font-weight: 600;
+    }}
+
+    .ios-widget h2 {{
+        font-size: 1.7em !important;
+        margin: 4px 0 6px 0 !important;
+        line-height: 1.2;
+        font-weight: 700;
+    }}
+
+    .ios-widget p {{
+        font-size: 0.8em !important;
+        margin: 0 !important;
+        opacity: 0.85;
+        line-height: 1.3;
     }}
 
     .meal-summary-widget {{
@@ -233,7 +257,7 @@ st.markdown(
         text-align: right !important;
     }}
 
-    /* תיקון קריטי לספארי ומובייל למניעת גלישה רוחבית ושבירת אלמנטים */
+    /* התאמות מובייל קריטיות לספארי ואייפון */
     @media screen and (max-width: 768px) {{
         .row-widget.stHorizontal {{
             flex-direction: column !important;
@@ -242,7 +266,7 @@ st.markdown(
             width: 100% !important;
             flex: 100% !important;
             min-width: unset !important;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }}
         .stButton button {{
             width: 100% !important;
@@ -691,7 +715,6 @@ with tab_workouts:
         w_type = st.selectbox(t["workout_type"], ["פאדל (Padel)", "חדר כושר / משקולות", "ריצה / אירובי", "כדורגל / ספורט קבוצתי", "אופניים", "שחייה", "אחר"])
         w_duration = st.number_input(t["workout_duration"], min_value=5, max_value=300, value=60, step=5)
         
-        # חישוב מדויק ואלגוריתמי התואם את האלגוריתם של שעון אפל לפי סוג האימון ומשכו
         burn_multiplier = 6.3 if "משקולות" in w_type else (11.0 if "ריצה" in w_type else (9.0 if "פאדל" in w_type else 8.0))
         calc_active = int(w_duration * burn_multiplier)
         calc_total = int(calc_active * 1.35)
@@ -778,33 +801,33 @@ with tab_history:
     with hc1:
         st.markdown(f"""
         <div class="ios-widget">
-            <h4 style="margin: 0 0 10px 0;">🔥 קלוריות שאכלת</h4>
-            <h2 style="margin: 0 0 10px 0; font-size: 1.6em;">{round(h_cal, 1)}</h2>
-            <p style="margin: 0; font-size: 0.8em; opacity: 0.8;">יעד: {h_goals['target_calories']} | אימונים: -{h_burned}</p>
+            <h4>🔥 קלוריות שאכלת</h4>
+            <h2>{round(h_cal, 1)}</h2>
+            <p>יעד: {h_goals['target_calories']} | אימונים: -{h_burned}</p>
         </div>
         """, unsafe_allow_html=True)
     with hc2:
         st.markdown(f"""
         <div class="ios-widget">
-            <h4 style="margin: 0 0 10px 0;">🥩 חלבון</h4>
-            <h2 style="margin: 0 0 10px 0; font-size: 1.6em;">{round(h_p, 1)}g</h2>
-            <p style="margin: 0; font-size: 0.8em; opacity: 0.8;">יעד: {h_goals['target_protein']}g</p>
+            <h4>🥩 חלבון</h4>
+            <h2>{round(h_p, 1)}g</h2>
+            <p>יעד: {h_goals['target_protein']}g</p>
         </div>
         """, unsafe_allow_html=True)
     with hc3:
         st.markdown(f"""
         <div class="ios-widget">
-            <h4 style="margin: 0 0 10px 0;">🍞 פחמימות</h4>
-            <h2 style="margin: 0 0 10px 0; font-size: 1.6em;">{round(h_c, 1)}g</h2>
-            <p style="margin: 0; font-size: 0.8em; opacity: 0.8;">יעד: {h_goals['target_carbs']}g</p>
+            <h4>🍞 פחמימות</h4>
+            <h2>{round(h_c, 1)}g</h2>
+            <p>יעד: {h_goals['target_carbs']}g</p>
         </div>
         """, unsafe_allow_html=True)
     with hc4:
         st.markdown(f"""
         <div class="ios-widget">
-            <h4 style="margin: 0 0 10px 0;">🥑 שומנים</h4>
-            <h2 style="margin: 0 0 10px 0; font-size: 1.6em;">{round(h_f, 1)}g</h2>
-            <p style="margin: 0; font-size: 0.8em; opacity: 0.8;">יעד: {h_goals['target_fat']}g</p>
+            <h4>🥑 שומנים</h4>
+            <h2>{round(h_f, 1)}g</h2>
+            <p>יעד: {h_goals['target_fat']}g</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -820,9 +843,9 @@ with tab_history:
             with w_cols[idx]:
                 st.markdown(f"""
                 <div class="ios-widget">
-                    <h4 style="margin: 0 0 8px 0; font-size: 0.95em;">🏋️ אימון: {hw['workout_type']}</h4>
-                    <h2 style="margin: 0 0 8px 0; font-size: 1.3em;">{hw['calories_burned']} פעילות</h2>
-                    <p style="margin: 0; font-size: 0.78em; opacity: 0.8;">טוטאל: {tot_val} | {hw['duration_minutes']} דק'</p>
+                    <h4>🏋️ {hw['workout_type']}</h4>
+                    <h2>{hw['calories_burned']} פעילות</h2>
+                    <p>טוטאל: {tot_val} | {hw['duration_minutes']} דק'</p>
                 </div>
                 """, unsafe_allow_html=True)
     else:
@@ -875,33 +898,33 @@ with tab_log:
     with col1:
         st.markdown(f"""
         <div class="ios-widget">
-            <h4 style="margin: 0 0 10px 0;">🔥 קלוריות</h4>
-            <h2 style="margin: 0 0 10px 0; font-size: 1.6em;">{round(consumed_cal, 1)}</h2>
-            <p style="margin: 0; font-size: 0.8em; opacity: 0.8;">יעד: {user_goals['target_calories']} | אימונים: -{total_burned_cals}</p>
+            <h4>🔥 קלוריות</h4>
+            <h2>{round(consumed_cal, 1)}</h2>
+            <p>יעד: {user_goals['target_calories']} | אימונים: -{total_burned_cals}</p>
         </div>
         """, unsafe_allow_html=True)
     with col2:
         st.markdown(f"""
         <div class="ios-widget">
-            <h4 style="margin: 0 0 10px 0;">🥩 חלבון</h4>
-            <h2 style="margin: 0 0 10px 0; font-size: 1.6em;">{round(consumed_p, 1)}g</h2>
-            <p style="margin: 0; font-size: 0.8em; opacity: 0.8;">יעד: {user_goals['target_protein']}g</p>
+            <h4>🥩 חלבון</h4>
+            <h2>{round(consumed_p, 1)}g</h2>
+            <p>יעד: {user_goals['target_protein']}g</p>
         </div>
         """, unsafe_allow_html=True)
     with col3:
         st.markdown(f"""
         <div class="ios-widget">
-            <h4 style="margin: 0 0 10px 0;">🍞 פחמימות</h4>
-            <h2 style="margin: 0 0 10px 0; font-size: 1.6em;">{round(consumed_c, 1)}g</h2>
-            <p style="margin: 0; font-size: 0.8em; opacity: 0.8;">יעד: {user_goals['target_carbs']}g</p>
+            <h4>🍞 פחמימות</h4>
+            <h2>{round(consumed_c, 1)}g</h2>
+            <p>יעד: {user_goals['target_carbs']}g</p>
         </div>
         """, unsafe_allow_html=True)
     with col4:
         st.markdown(f"""
         <div class="ios-widget">
-            <h4 style="margin: 0 0 10px 0;">🥑 שומנים</h4>
-            <h2 style="margin: 0 0 10px 0; font-size: 1.6em;">{round(consumed_f, 1)}g</h2>
-            <p style="margin: 0; font-size: 0.8em; opacity: 0.8;">יעד: {user_goals['target_fat']}g</p>
+            <h4>🥑 שומנים</h4>
+            <h2>{round(consumed_f, 1)}g</h2>
+            <p>יעד: {user_goals['target_fat']}g</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -913,9 +936,9 @@ with tab_log:
             with w_log_cols[idx]:
                 st.markdown(f"""
                 <div class="ios-widget">
-                    <h4 style="margin: 0 0 8px 0; font-size: 0.95em;">🏋️ אימון: {w_item['workout_type']}</h4>
-                    <h2 style="margin: 0 0 8px 0; font-size: 1.3em;">{w_item['calories_burned']} פעילות</h2>
-                    <p style="margin: 0; font-size: 0.78em; opacity: 0.8;">טוטאל: {tot_val} | {w_item['duration_minutes']} דק'</p>
+                    <h4>🏋️ {w_item['workout_type']}</h4>
+                    <h2>{w_item['calories_burned']} פעילות</h2>
+                    <p>טוטאל: {tot_val} | {w_item['duration_minutes']} דק'</p>
                 </div>
                 """, unsafe_allow_html=True)
 
