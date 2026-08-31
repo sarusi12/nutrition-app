@@ -49,6 +49,7 @@ TRANSLATIONS = {
         "tab_workouts": "💪 אימונים",
         "tab_history": "📅 היסטוריה",
         "tab_photos": "📸 תמונות",
+        "tab_ai": "🤖 יועץ AI",
         "tab_settings": "⚙️ הגדרות",
         "search_food": "חפש מאכל מהמאגר או הקלד לסינון",
         "unit_type": "יחידת מידה",
@@ -109,6 +110,7 @@ TRANSLATIONS = {
         "tab_workouts": "💪 Workouts",
         "tab_history": "📅 History",
         "tab_photos": "📸 Photos",
+        "tab_ai": "🤖 AI Advisor",
         "tab_settings": "⚙️ Settings",
         "search_food": "Search food from DB or type to filter",
         "unit_type": "Unit type",
@@ -411,6 +413,21 @@ def init_supabase() -> Client:
     return create_client(url, key)
 
 supabase = init_supabase()
+
+# --- Google Gemini AI Client Initialization ---
+def get_gemini_client():
+    api_key = (
+        st.session_state.get("custom_google_api_key", "").strip() or
+        st.secrets.get("GOOGLE_API_KEY", st.secrets.get("GEMINI_API_KEY", None))
+    )
+    if not api_key:
+        return None
+    try:
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        return genai
+    except Exception:
+        return None
 
 # --- מאגר מובנה ענק ועשיר (כולל משקאות, מים וקפה) ---
 LOCAL_DATABASE = {
@@ -855,7 +872,7 @@ if "current_nav_tab" not in st.session_state:
 
 nav_keys = [
     t["tab_log"], t["tab_search"], t["tab_water"], t["tab_workouts"], 
-    t["tab_history"], t["tab_photos"], t["tab_settings"]
+    t["tab_history"], t["tab_photos"], t["tab_ai"], t["tab_settings"]
 ]
 
 nav_cols = st.columns(len(nav_keys))
@@ -1187,6 +1204,139 @@ elif selected_tab == t["tab_photos"]:
     else:
         st.info("💡 עדיין לא העלת תמונות מעקב. זה הזמן לצלם את התמונה הראשונה!")
 
+elif selected_tab == t["tab_history"]:
+    st.subheader("📅 יומן היסטוריה, בדיקת עמידה ביעדים ומעקב משקל")
+    
+    with st.expander("📈 גרף התקדמות ומעקב משקל אישי", expanded=True):
+        col_w1, col_w2 = st.columns([2, 1])
+        with col_w1:
+            st.write("עדכן את משקלך הנוכחי כדי לעקוב אחר ההתקדמות שלך לאורך זמן:")
+        with col_w2:
+            current_logged_weight = float(profile_data.get("weight", 75.0))
+            new_weight_input = st.number_input("משקל נוכחי (ק\"ג):", min_value=30.0, max_value=250.0, value=current_logged_weight, step=0.1, key="weight_tracker_input")
+            weight_date_input = st.date_input("תאריך המדידה:", date.today(), key="weight_tracker_date")
+            
+            if st.button("💾 שמור מדידת משקל"):
+                w_date_str = weight_date_input.strftime("%Y-%m-%d")
+                try:
+                    supabase.table("weight_logs").upsert(
+                        {"user_id": user_id, "date": w_date_str, "weight": float(new_weight_input)},
+                        on_conflict="user_id,date"
+                    ).execute()
+                except Exception:
+                    pass
+                
+                supabase.table("user_profiles").update({"weight": float(new_weight_input)}).eq("user_id", user_id).execute()
+                st.success(f"✅ המשקל {new_weight_input} ק\"ג נשמר בהצלחה!")
+                st.rerun()
+
+        weight_data = []
+        try:
+            w_res = supabase.table("weight_logs").select("*").eq("user_id", user_id).order("date", desc=False).execute()
+            weight_data = w_res.data
+        except Exception:
+            pass
+
+        if not weight_data or len(weight_data) == 0:
+            weight_data = [{"date": str(date.today()), "weight": float(profile_data.get("weight", 75.0))}]
+
+        import pandas as pd
+        df_weight = pd.DataFrame(weight_data)
+        if "date" in df_weight.columns and "weight" in df_weight.columns:
+            df_weight["date"] = pd.to_datetime(df_weight["date"])
+            df_weight = df_weight.sort_values("date")
+            df_weight.set_index("date", inplace=True)
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.line_chart(df_weight["weight"], use_container_width=True)
+            st.caption("📈 גרף מעקב משקל לאורך זמן (בק\"ג)")
+
+    st.divider()
+
+    history_date = st.date_input("בחר תאריך לבדיקה:", date.today(), key="history_calendar_picker")
+    history_date_str = history_date.strftime("%Y-%m-%d")
+
+    st.markdown(f"### סיכום עבור תאריך: **{history_date_str}**")
+
+    hist_log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", history_date_str).execute()
+    hist_entries = hist_log_res.data
+
+    h_cal, h_p, h_c, h_f = safe_food_totals(hist_entries)
+
+    hist_workouts_res = supabase.table("workouts").select("*").eq("user_id", user_id).eq("date", history_date_str).execute()
+    hist_workouts = hist_workouts_res.data
+    h_burned = sum(w.get("calories_burned", 0) for w in hist_workouts) if hist_workouts else 0
+
+    hist_goals_res = supabase.table("daily_goals").select("*").eq("user_id", user_id).eq("date", history_date_str).execute()
+    h_goals = hist_goals_res.data[0] if hist_goals_res.data else user_goals
+
+    hc1, hc2, hc3, hc4 = st.columns(4)
+    with hc1:
+        st.markdown(f"""
+        <div class="ios-widget">
+            <h4>🔥 קלוריות שאכלת</h4>
+            <h2>{round(h_cal, 1)}</h2>
+            <p>יעד: {h_goals['target_calories']} | אימונים: -{h_burned}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with hc2:
+        st.markdown(f"""
+        <div class="ios-widget">
+            <h4>🥩 חלבון</h4>
+            <h2>{round(h_p, 1)}g</h2>
+            <p>יעד: {h_goals['target_protein']}g</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with hc3:
+        st.markdown(f"""
+        <div class="ios-widget">
+            <h4>🍞 פחמימות</h4>
+            <h2>{round(h_c, 1)}g</h2>
+            <p>יעד: {h_goals['target_carbs']}g</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with hc4:
+        st.markdown(f"""
+        <div class="ios-widget">
+            <h4>🥑 שומנים</h4>
+            <h2>{round(h_f, 1)}g</h2>
+            <p>יעד: {h_goals['target_fat']}g</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+elif selected_tab == t["tab_ai"]:
+    st.subheader("🤖 יועץ תזונה AI (Google Gemini)")
+    gemini_client = get_gemini_client()
+    
+    if not gemini_client:
+        st.info("💡 שים לב: כדי להפעיל את יועץ ה-AI, ניתן להכניס מפתח Google API תחת לשונית ההגדרות (⚙️ הגדרות) או להגדיר אותו בקובץ ה-secrets תחת `GOOGLE_API_KEY`.")
+
+    user_query = st.text_area("שאל כל שאלה בנוגע לתזונה, האימונים או ההתקדמות שלך:")
+    if st.button("שלח שאלה"):
+        if not user_query.strip():
+            st.warning("נא להקליד שאלה.")
+        elif not gemini_client:
+            st.error("לא ניתן לפנות ליועץ - חסר מפתח Google API. הכנס אותו בהגדרות המערכת.")
+        else:
+            with st.spinner("חושב..."):
+                try:
+                    ctx_log = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute().data
+                    ctx_cal, ctx_p, ctx_c, ctx_f = safe_food_totals(ctx_log)
+                    context_str = (
+                        f"נתוני היום ({selected_date}) של המשתמש: "
+                        f"קלוריות שנאכלו: {round(ctx_cal)} מתוך יעד {user_goals['target_calories']}, "
+                        f"חלבון: {round(ctx_p)}g מתוך יעד {user_goals['target_protein']}g, "
+                        f"פחמימות: {round(ctx_c)}g מתוך יעד {user_goals['target_carbs']}g, "
+                        f"שומן: {round(ctx_f)}g מתוך יעד {user_goals['target_fat']}g. "
+                        f"פרופיל: גיל {profile_data.get('age')}, משקל {profile_data.get('weight')} ק\"ג, מטרה: {profile_data.get('goal')}."
+                    )
+                    model = gemini_client.GenerativeModel('gemini-2.5-flash')
+                    full_prompt = f"אתה יועץ תזונה ואימונים ידידותי. ענה בעברית, בקצרה ובאופן מעשי, בהתבסס על הנתונים הבאים. אל תיתן ייעוץ רפואי.\n\n{context_str}\n\nשאלת המשתמש: {user_query}"
+                    response = model.generate_content(full_prompt)
+                    st.markdown(f"### 💡 תשובת היועץ\n{response.text}")
+                except Exception as e:
+                    st.error(f"שגיאה בפנייה ליועץ ה-AI: {e}")
+
 elif selected_tab == t["tab_log"]:
     st.subheader(f"תיעוד ארוחות ושתייה לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
@@ -1334,14 +1484,20 @@ elif selected_tab == t["tab_settings"]:
         
         theme_choice = st.selectbox(t["theme_label"], t["theme_options"], index=t["theme_options"].index(st.session_state["theme_mode"]) if st.session_state["theme_mode"] in t["theme_options"] else 0)
         
+        st.markdown("---")
+        st.markdown("🔑 **הגדרת מפתח Google API (לשירותי יועץ AI)**")
+        current_custom_key = st.session_state.get("custom_google_api_key", "")
+        api_input_field = st.text_input("הכנס Google API Key (אופציונלי):", value=current_custom_key, type="password")
+
         submit_settings = st.form_submit_button(t["save_settings"])
         
         if submit_settings:
             st.session_state["theme_mode"] = theme_choice
+            st.session_state["custom_google_api_key"] = api_input_field.strip()
             supabase.table("user_profiles").update({
                 "age": int(s_age), "height": float(s_height), "weight": float(s_weight)
             }).eq("user_id", user_id).execute()
-            st.success("Updated successfully!")
+            st.success("ההגדרות עודכנו בהצלחה!")
             st.rerun()
 
     st.divider()
