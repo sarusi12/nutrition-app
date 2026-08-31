@@ -167,7 +167,7 @@ text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
 widget_border = "rgba(255, 255, 255, 0.1)" if is_dark else "rgba(0, 0, 0, 0.08)"
 
-# --- Clean CSS Styling (הסתרה מוחלטת של סרגל צד + הגדלת פונטים בווידג'טים) ---
+# --- Clean CSS Styling (הסתרה מוחלטת של סרגל צד + הגדלת לשוניות הניווט) ---
 st.markdown(
     f"""
     <style>
@@ -194,6 +194,29 @@ st.markdown(
     
     div[data-testid="stSidebarNav"] {{
         direction: rtl !important;
+    }}
+
+    /* הגדלה והבלטה משמעותית של לשוניות הניווט העליונות (הטאבים) */
+    .stTabs [data-baseweb="tab-list"] {{
+        direction: rtl;
+        gap: 8px;
+        background-color: {widget_bg};
+        padding: 8px;
+        border-radius: 18px;
+        display: flex;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: 20px;
+    }}
+    
+    .stTabs [data-baseweb="tab"] {{
+        border-radius: 14px;
+        padding: 12px 20px !important;
+        color: {text_color};
+        white-space: nowrap;
+        font-size: 1.15em !important;
+        font-weight: 700 !important;
+        flex-shrink: 0;
     }}
 
     /* ווידג'טים ראשיים מוגדלים ומרווחים */
@@ -245,26 +268,6 @@ st.markdown(
         text-align: center;
         margin-bottom: 10px;
     }}
-    
-    .stTabs [data-baseweb="tab-list"] {{
-        direction: rtl;
-        gap: 6px;
-        background-color: {widget_bg};
-        padding: 6px;
-        border-radius: 16px;
-        display: flex;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }}
-    .stTabs [data-baseweb="tab"] {{
-        border-radius: 12px;
-        padding: 10px 16px;
-        color: {text_color};
-        white-space: nowrap;
-        font-size: 0.95em;
-        font-weight: 600;
-        flex-shrink: 0;
-    }}
 
     .streamlit-expanderHeader {{
         background-color: {widget_bg} !important;
@@ -272,7 +275,7 @@ st.markdown(
         border-radius: 14px !important;
         direction: rtl !important;
         text-align: right !important;
-        font-size: 1.1em !important;
+        font-size: 1.15em !important;
         font-weight: bold !important;
     }}
 
