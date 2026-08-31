@@ -181,6 +181,17 @@ st.markdown(
         text-align: center;
         min-height: 140px;
     }}
+
+    .meal-summary-widget {{
+        background: {widget_bg};
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid {widget_border};
+        border-radius: 16px;
+        padding: 12px;
+        text-align: center;
+        margin-bottom: 10px;
+    }}
     
     .stTabs [data-baseweb="tab-list"] {{
         gap: 8px;
@@ -646,7 +657,7 @@ with tab_camera:
             st.success("הארוחה נוספה!")
             st.rerun()
 
-# --- מסך יומן אכילה ראשי עם פירוט מלא של כל אבות המזון בתוך הארוחות ---
+# --- מסך יומן אכילה ראשי עם ריבועי מדדים ידידותיים בתוך הארוחות ---
 with tab_log:
     st.subheader(f"תיעוד ארוחות לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
@@ -723,21 +734,48 @@ with tab_log:
 
             with st.expander(f"🍽️ {meal_name} (קלוריות: {round(meal_cals, 1)} | חלבון: {round(meal_p, 1)}g | פחמימות: {round(meal_c, 1)}g | שומן: {round(meal_f, 1)}g) — לחץ לפתיחה"):
                 if meal_items:
-                    # סיכום קטן בתוך הארוחה
-                    st.markdown(f"**סיכום ארוחה:** 🔥 {round(meal_cals, 1)} קלוריות | 🥩 חלבון: {round(meal_p, 1)}g | 🍞 פחמימות: {round(meal_c, 1)}g | 🥑 שומן: {round(meal_f, 1)}g")
-                    st.divider()
+                    # סיכום ארוחה בריבועים מעוצבים כמו הסיכום היומי
+                    mc1, mc2, mc3, mc4 = st.columns(4)
+                    with mc1:
+                        st.markdown(f"""
+                        <div class="meal-summary-widget">
+                            <span style="font-size: 0.8em; opacity: 0.8;">🔥 קלוריות</span>
+                            <div style="font-size: 1.2em; font-weight: bold;">{round(meal_cals, 1)}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    with mc2:
+                        st.markdown(f"""
+                        <div class="meal-summary-widget">
+                            <span style="font-size: 0.8em; opacity: 0.8;">🥩 חלבון</span>
+                            <div style="font-size: 1.2em; font-weight: bold;">{round(meal_p, 1)}g</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    with mc3:
+                        st.markdown(f"""
+                        <div class="meal-summary-widget">
+                            <span style="font-size: 0.8em; opacity: 0.8;">🍞 פחמימות</span>
+                            <div style="font-size: 1.2em; font-weight: bold;">{round(meal_c, 1)}g</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    with mc4:
+                        st.markdown(f"""
+                        <div class="meal-summary-widget">
+                            <span style="font-size: 0.8em; opacity: 0.8;">🥑 שומן</span>
+                            <div style="font-size: 1.2em; font-weight: bold;">{round(meal_f, 1)}g</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                    st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
 
                     for e in meal_items:
                         food_item = e["food_items"]
                         amt = e["amount_grams"]
                         
-                        # חישוב הערכים עבור הפריט הספציפי
                         item_cal = food_item['calories_per_100g'] * amt / 100.0
                         item_p = food_item['protein_per_100g'] * amt / 100.0
                         item_c = food_item['carbs_per_100g'] * amt / 100.0
                         item_f = food_item['fat_per_100g'] * amt / 100.0
 
-                        # זיהוי יחידת מידה להצגה נוחה
                         if amt == 250.0 and ("משקה חלבון" in food_item['name'] or "תנובה" in food_item['name'] or "יטבתה" in food_item['name'] or "שטראוס" in food_item['name']):
                             display_amt = "1 בקבוק (250 מ\"ל)"
                         elif amt == 112.0 and "טונה" in food_item['name']:
@@ -754,7 +792,7 @@ with tab_log:
                             st.session_state[edit_key_state] = False
 
                         c_food, c_amt, c_edit, c_del = st.columns([3, 2, 1, 1])
-                        c_food.markdown(f"**• {food_item['name']}**<br><span style='font-size: 0.85em; opacity: 0.8;'>🔥 {round(item_cal, 1)} קלוריות | 🥩 חלבון: {round(item_p, 1)}g | 🍞 פחמימות: {round(item_c, 1)}g | 🥑 שומן: {round(item_f, 1)}g</span>", unsafe_allow_html=True)
+                        c_food.markdown(f"**• {food_item['name']}**<br><span style='font-size: 0.85em; opacity: 0.8;'>🔥 {round(item_cal, 1)} קל | 🥩 חלבון: {round(item_p, 1)}g | 🍞 פחמימות: {round(item_c, 1)}g | 🥑 שומן: {round(item_f, 1)}g</span>", unsafe_allow_html=True)
                         c_amt.write(display_amt)
                         
                         if c_edit.button("✏️", key=f"edit_btn_{e['id']}"):
