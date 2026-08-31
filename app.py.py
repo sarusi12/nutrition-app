@@ -167,7 +167,7 @@ text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
 widget_border = "rgba(255, 255, 255, 0.1)" if is_dark else "rgba(0, 0, 0, 0.08)"
 
-# --- Clean CSS Styling (הסתרה מוחלטת של סרגל צד סגור למניעת טקסטים מרוחים) ---
+# --- Clean CSS Styling (פתרון מקצועי: הסתרה מוחלטת של סרגל הצד במצב סגור) ---
 st.markdown(
     f"""
     <style>
@@ -180,21 +180,17 @@ st.markdown(
         -webkit-text-size-adjust: 100%;
     }}
     
-    /* מחיקה והסתרה מוחלטת של תוכן הסרגל כאשר הוא סגור במחשב ובנייד */
-    section[data-testid="stSidebar"][aria-expanded="false"],
-    section[data-testid="stSidebar"].st-emotion-cache-1218u7m,
-    [data-testid="collapsedControl"] {{
-        visibility: visible;
+    /* מניעה מוחלטת של שבירת טקסט והצגת פס אנכי כאשר התפריט סגור */
+    section[data-testid="stSidebar"][aria-expanded="false"] {{
+        display: none !important;
+        width: 0px !important;
+        min-width: 0px !important;
+        overflow: hidden !important;
     }}
     
     section[data-testid="stSidebar"] {{
         background-color: {bg_color} !important;
         z-index: 999999 !important;
-    }}
-
-    /* אם התפריט סגור, אל תאפשר לתוכן שלו להימרח או להופיע כפס אנכי */
-    section[data-testid="stSidebar"] > div:first-child {{
-        overflow: hidden;
     }}
     
     div[data-testid="stSidebarNav"] {{
