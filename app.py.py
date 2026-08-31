@@ -170,9 +170,9 @@ else:
 bg_color = "#0e1117" if is_dark else "#f8f9fa"
 text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
-widget_border = "rgba(255, 255, 255, 0.1)" if is_dark else "rgba(0, 0, 0, 0.08)"
+widget_border = "rgba(255, 255, 255, 0.15)" if is_dark else "rgba(0, 0, 0, 0.08)"
 
-# --- Universal Cross-Browser CSS Styling ---
+# --- Ultimate Mobile & Dark Mode CSS Fixes ---
 st.markdown(
     f"""
     <style>
@@ -184,6 +184,17 @@ st.markdown(
         text-align: right;
         -webkit-text-size-adjust: 100%;
         -ms-text-size-adjust: 100%;
+    }}
+    
+    /* תיקון פונטים וטקסטים בכל מצב (מונע טקסט אפור/כהה במצב לילה) */
+    p, span, label, div, h1, h2, h3, h4, h5, h6, .stMarkdown, .stText, [data-testid="stMarkdownContainer"] {{
+        color: {text_color} !important;
+    }}
+
+    input, textarea, select, div[data-baseweb="select"] {{
+        color: {text_color} !important;
+        background-color: {widget_bg} !important;
+        -webkit-text-fill-color: {text_color} !important;
     }}
     
     section[data-testid="stSidebar"][aria-expanded="false"] {{
@@ -204,10 +215,10 @@ st.markdown(
 
     .stTabs [data-baseweb="tab-list"] {{
         direction: rtl;
-        gap: 8px;
+        gap: 6px;
         background-color: {widget_bg};
-        padding: 8px;
-        border-radius: 18px;
+        padding: 6px;
+        border-radius: 16px;
         display: -webkit-box;
         display: -ms-flexbox;
         display: flex;
@@ -217,29 +228,29 @@ st.markdown(
     }}
     
     .stTabs [data-baseweb="tab"] {{
-        border-radius: 14px;
-        padding: 12px 20px !important;
-        color: {text_color};
+        border-radius: 12px;
+        padding: 10px 16px !important;
+        color: {text_color} !important;
         white-space: nowrap;
-        font-size: 1.15em !important;
+        font-size: 1.05em !important;
         font-weight: 700 !important;
         -ms-flex-negative: 0;
         flex-shrink: 0;
     }}
 
     .ios-widget {{
-        background: linear-gradient(135deg, rgba(0, 122, 255, 0.06), rgba(88, 86, 214, 0.06));
+        background: linear-gradient(135deg, rgba(0, 122, 255, 0.08), rgba(88, 86, 214, 0.08));
         background-color: {widget_bg};
         -webkit-backdrop-filter: blur(20px);
         backdrop-filter: blur(20px);
-        border: 1px solid rgba(0, 122, 255, 0.2);
+        border: 1px solid rgba(0, 122, 255, 0.25);
         border-radius: 20px;
-        padding: 22px 16px;
+        padding: 18px 12px;
         -webkit-box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.12);
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.12);
-        margin-bottom: 14px;
+        margin-bottom: 12px;
         text-align: center;
-        min-height: 155px;
+        min-height: 140px;
         display: -webkit-box;
         display: -ms-flexbox;
         display: flex;
@@ -257,37 +268,39 @@ st.markdown(
     }}
 
     .ios-widget h4 {{
-        font-size: 1.15em !important;
-        margin: 0 0 8px 0 !important;
+        font-size: 1.1em !important;
+        margin: 0 0 6px 0 !important;
         font-weight: 600;
-        color: #007AFF;
+        color: #0a84ff !important;
     }}
 
     .ios-widget h2 {{
-        font-size: 2.1em !important;
-        margin: 6px 0 8px 0 !important;
+        font-size: 1.9em !important;
+        margin: 4px 0 6px 0 !important;
         line-height: 1.2;
         font-weight: 700;
+        color: {text_color} !important;
     }}
 
     .ios-widget p {{
-        font-size: 0.95em !important;
+        font-size: 0.9em !important;
         margin: 0 !important;
-        opacity: 0.9;
-        line-height: 1.4;
+        opacity: 0.95;
+        line-height: 1.3;
+        color: {text_color} !important;
     }}
 
     div[data-testid="column"] div.stButton > button[key*="w_btn_"] {{
-        background: linear-gradient(135deg, rgba(0, 122, 255, 0.06), rgba(88, 86, 214, 0.06)) !important;
+        background: linear-gradient(135deg, rgba(0, 122, 255, 0.08), rgba(88, 86, 214, 0.08)) !important;
         -webkit-backdrop-filter: blur(20px) !important;
         backdrop-filter: blur(20px) !important;
-        border: 1px solid rgba(0, 122, 255, 0.2) !important;
+        border: 1px solid rgba(0, 122, 255, 0.25) !important;
         border-radius: 20px !important;
         color: {text_color} !important;
-        height: 155px !important;
+        height: 140px !important;
         width: 100% !important;
         font-weight: 700 !important;
-        font-size: 1.15em !important;
+        font-size: 1.1em !important;
         -webkit-box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.12) !important;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.12) !important;
         display: -webkit-box !important;
@@ -319,10 +332,12 @@ st.markdown(
         border-radius: 14px !important;
         direction: rtl !important;
         text-align: right !important;
-        font-size: 1.15em !important;
+        font-size: 1.1em !important;
         font-weight: bold !important;
+        color: {text_color} !important;
     }}
 
+    /* התאמה אבסולוטית למובייל למניעת גלילה אופקית ויישור רכיבים */
     @media screen and (max-width: 768px) {{
         .row-widget.stHorizontal {{
             -webkit-box-orient: vertical !important;
@@ -339,7 +354,14 @@ st.markdown(
             margin-bottom: 10px;
         }}
         div[data-testid="column"] div.stButton > button[key*="w_btn_"] {{
-            height: 85px !important;
+            height: 80px !important;
+        }}
+        .ios-widget {{
+            min-height: 110px !important;
+            padding: 14px 10px !important;
+        }}
+        .ios-widget h2 {{
+            font-size: 1.6em !important;
         }}
     }}
     </style>
@@ -1401,3 +1423,4 @@ with tab_settings:
                     st.error(f"Error updating account: {e}")
             else:
                 st.info("No changes made.")
+                
