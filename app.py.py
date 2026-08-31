@@ -460,6 +460,7 @@ with tab_camera:
             st.success("הארוחה נוספה!")
             st.rerun()
 
+# --- מסך יומן אכילה ראשי נקי עם לשוניות מתקפלות לכל ארוחה ---
 with tab_log:
     st.subheader(f"תיעוד ארוחות לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
@@ -511,16 +512,40 @@ with tab_log:
         """, unsafe_allow_html=True)
 
     st.divider()
+    
     if entries:
+        # מיון הארוחות לפי סוגים
+        meals_map = {
+            t["breakfast"]: [],
+            t["lunch"]: [],
+            t["dinner"]: [],
+            t["snack"]: []
+        }
+        
         for e in entries:
-            food_item = e["food_items"]
-            c_food, c_meal, c_amt, c_del = st.columns([3, 2, 2, 1])
-            c_food.write(food_item["name"])
-            c_meal.write(e["meal_type"])
-            c_amt.write(f"{e['amount_grams']}g")
-            if c_del.button("🗑️", key=f"del_{e['id']}"):
-                supabase.table("food_log").delete().eq("id", e["id"]).execute()
-                st.rerun()
+            m_type = e.get("meal_type", t["breakfast"])
+            if m_type in meals_map:
+                meals_map[m_type].append(e)
+            else:
+                # ברירת מחדל אם יש סוג ישן
+                if t["breakfast"] in meals_map:
+                    meals_map[t["breakfast"]].append(e)
+
+        # הצגת כל ארוחה בתוך תיקיה מתקפלת (Expander) נפרדת ונظיפה
+        for meal_name, meal_items in meals_map.items():
+            meal_cals = sum(item["food_items"]["calories_per_100g"] * item["amount_grams"] / 100.0 for item in meal_items)
+            with st.expander(f"🍽️ {meal_name} (קלוריות: {round(meal_cals, 1)}) — לחץ לפתיחה"):
+                if meal_items:
+                    for e in meal_items:
+                        food_item = e["food_items"]
+                        c_food, c_amt, c_del = st.columns([4, 2, 1])
+                        c_food.write(f"• {food_item['name']}")
+                        c_amt.write(f"{e['amount_grams']} גרם")
+                        if c_del.button("🗑️", key=f"del_exp_{e['id']}"):
+                            supabase.table("food_log").delete().eq("id", e["id"]).execute()
+                            st.rerun()
+                else:
+                    st.info("אין מאכלים בארוחה זו.")
     else:
         st.info("No logs for today.")
 
