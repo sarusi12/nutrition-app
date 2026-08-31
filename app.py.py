@@ -339,11 +339,11 @@ def get_unit_options(item_name):
     if not item_name or item_name == "-- ללא --":
         return ["גרם", "יחידות", "כפות"], 0
         
-    # 1. עדיפות עליונה לטוסטים, לחם, ביצה, פירות - יחידות כברירת מחדל
-    if any(k in item_name for k in ["טוסט", "פרוסת", "פיתה", "לחם", "ביצה", "בננה", "תפוח", "תפוז", "אגס", "עגבנייה", "מלפפון"]):
+    # 1. טוסטים, לחם, ביצה, פירות, וגבינה צהובה (פרוסות) - יחידות כברירת מחדל
+    if any(k in item_name for k in ["טוסט", "פרוסת", "פיתה", "לחם", "ביצה", "בננה", "תפוח", "תפוז", "אגס", "עגבנייה", "מלפפון", "גבינה צהובה"]):
         return ["יחידות", "גרם"], 0
         
-    # 2. משקאות - מקבלים "בקבוק" ומוסתר משאר הדברים
+    # 2. משקאות - מקבלים "בקבוק"
     if any(k in item_name for k in ["משקה חלבון", "תנובה", "יטבתה", "שטראוס", "מילקי"]):
         return ["בקבוק", "גרם"], 0
         
@@ -359,9 +359,13 @@ def get_unit_options(item_name):
     if "סלט" in item_name:
         return ["קערה / מנה", "גרם", "כפות"], 0
         
-    # 6. מוצרי חלב / קופסאות שימורים - גרם כברירת מחדל, עם אופציה לאריזה שלמה
+    # 6. מוצרי חלב אחרים למריחה (קוטג', גבינה לבנה), וקופסאות שימורים - אריזה שלמה או גרם
     if any(k in item_name for k in ["טונה", "קוטג'", "גבינה", "יוגורט", "חלב"]):
         return ["גרם", "כפות", "אריזה / יחידה"], 0
+        
+    # 7. בשרים ודגים - בדר"כ לפי גרם, אבל אפשר לבחור ביחידה (שניצל, נתח סלמון וכו')
+    if any(k in item_name for k in ["חזה עוף", "שניצל", "סלמון", "סטייק", "פרגיות", "בקר", "דניס", "מושט", "בקלה", "שרימפס"]):
+        return ["גרם", "יחידות"], 0
         
     # ברירת מחדל כללית
     return ["גרם", "כפות", "יחידות"], 0
@@ -371,18 +375,20 @@ def calc_grams(item_name, unit, raw_amount):
     if unit == "כפות": return raw_amount * 15.0
     elif unit == "כפיות": return raw_amount * 5.0
     elif unit == "קערה / מנה": return raw_amount * 200.0
-    elif unit == "בקבוק":
-        return raw_amount * 250.0 
+    elif unit == "בקבוק": return raw_amount * 250.0 
     elif unit == "סקופ": return raw_amount * 30.0
     elif unit in ["יחידות", "אריזה / יחידה"]:
         if "ביצה" in item_name: return raw_amount * 50.0
-        elif "טוסט" in item_name: return raw_amount * 100.0  # 1 טוסט = 100 גרם בממוצע
+        elif "טוסט" in item_name: return raw_amount * 100.0  
+        elif "גבינה צהובה" in item_name: return raw_amount * 25.0  # פרוסת גבינה צהובה סטנדרטית (עמק/נועם)
         elif "פרוסת לחם" in item_name: return raw_amount * 35.0
         elif "פיתה" in item_name: return raw_amount * 100.0
         elif any(k in item_name for k in ["בננה", "תפוח", "תפוז", "אגס"]): return raw_amount * 120.0
         elif "עגבנייה" in item_name or "מלפפון" in item_name: return raw_amount * 100.0
         elif "טונה" in item_name: return raw_amount * 112.0
         elif "קוטג'" in item_name or "גבינה" in item_name: return raw_amount * 250.0
+        elif any(k in item_name for k in ["חזה עוף", "שניצל", "סלמון", "סטייק", "פרגיות"]): return raw_amount * 150.0
+        elif any(k in item_name for k in ["דניס", "מושט", "בקלה"]): return raw_amount * 200.0
         else: return raw_amount * 100.0
     return raw_amount
 
@@ -553,7 +559,6 @@ with tab_auto_add:
         with col_u1:
             chosen_unit = st.selectbox(t["unit_type"], u_opts, index=def_idx, key="food_unit_selection")
         with col_u2:
-            # הטריק הדינאמי של Streamlit: שימוש ב- key המכיל את יחידת המידה, מאלץ את השדה להתאפס ל-1 מיד!
             default_val = 1.0 if chosen_unit in ["בקבוק", "סקופ", "יחידות", "כפות", "קערה / מנה", "כפיות", "אריזה / יחידה"] else 100.0
             raw_amount = st.number_input(t["amount_val"], min_value=0.1, value=default_val, step=1.0 if chosen_unit != "גרם" else 10.0, key=f"food_amount_input_{chosen_unit}")
 
@@ -578,7 +583,6 @@ with tab_auto_add:
     else:
         st.info("בחר עד 4 מרכיבים שונים כדי להרכיב ארוחה שלמה ולהוסיף הכל בלחיצה אחת:")
         
-        # פונקציה לייצור דינמי של שדות בחירה כולל ה"טריק" לאיפוס ל-1
         def render_meal_item(idx):
             item_sel = st.selectbox(f"רכיב {idx}", options=["-- ללא --"] + sorted(list(LOCAL_DATABASE.keys())), key=f"meal_item_{idx}")
             u_opts, def_idx = get_unit_options(item_sel)
@@ -587,7 +591,6 @@ with tab_auto_add:
             
             d_val = 1.0 if unit_sel in ["בקבוק", "סקופ", "יחידות", "כפות", "קערה / מנה", "כפיות", "אריזה / יחידה"] else 100.0
             
-            # הכנסת unit_sel לתוך ה- key מכריחה את המספר להתאפס כשהסוג משתנה!
             amt_val = c2.number_input(f"כמות ({idx})", min_value=0.1, value=d_val, step=1.0 if unit_sel != "גרם" else 10.0, key=f"meal_amt_{idx}_{unit_sel}", label_visibility="collapsed")
             return item_sel, unit_sel, amt_val
             
@@ -820,6 +823,10 @@ with tab_log:
                             display_amt = "1 קופסת טונה"
                         elif amt == 50.0 and "ביצה" in food_item['name']:
                             display_amt = "1 ביצה"
+                        elif "גבינה צהובה" in food_item['name']:
+                            if amt == 25.0: display_amt = "1 פרוסה"
+                            elif amt % 25.0 == 0: display_amt = f"{int(amt / 25.0)} פרוסות"
+                            else: display_amt = f"{amt} גרם"
                         elif "טוסט" in food_item['name']:
                             if amt == 100.0: display_amt = "1 טוסט"
                             elif amt % 100.0 == 0: display_amt = f"{int(amt / 100.0)} טוסטים"
@@ -828,6 +835,8 @@ with tab_log:
                             if amt == 35.0: display_amt = "1 פרוסה"
                             elif amt % 35.0 == 0: display_amt = f"{int(amt / 35.0)} פרוסות"
                             else: display_amt = f"{amt} גרם"
+                        elif any(k in food_item['name'] for k in ["חזה עוף", "שניצל", "סלמון", "סטייק", "פרגיות"]) and amt % 150.0 == 0:
+                            display_amt = f"{int(amt / 150.0)} יחידות"
                         elif amt % 15.0 == 0 and amt <= 150.0:
                             display_amt = f"{int(amt / 15.0)} כפות"
                         else:
