@@ -87,16 +87,31 @@ def logout_user():
 if not st.session_state["user"]:
     st.title("🔐 התחברות למערכת התזונה")
     auth_tab1, auth_tab2 = st.tabs(["התחברות", "הרשמה"])
+    
     with auth_tab1:
-        email = st.text_input("אימייל", key="login_email")
-        password = st.text_input("סיסמה", type="password", key="login_pass")
-        if st.button("התחבר"):
-            login_user(email, password)
+        with st.form("login_form"):
+            email = st.text_input("אימייל", key="login_email")
+            password = st.text_input("סיסמה", type="password", key="login_pass")
+            submit_login = st.form_submit_button("התחבר")
+            
+            if submit_login:
+                if email and password:
+                    login_user(email.strip(), password)
+                else:
+                    st.error("נא להזין אימייל וסיסמה")
+            
     with auth_tab2:
-        reg_email = st.text_input("אימייל להרשמה", key="reg_email")
-        reg_password = st.text_input("סיסמה (לפחות 6 תווים)", type="password", key="reg_pass")
-        if st.button("ירשם כעת"):
-            signup_user(reg_email, reg_password)
+        with st.form("signup_form"):
+            reg_email = st.text_input("אימייל להרשמה", key="reg_email")
+            reg_password = st.text_input("סיסמה (לפחות 6 תווים)", type="password", key="reg_pass")
+            submit_signup = st.form_submit_button("ירשם כעת")
+            
+            if submit_signup:
+                if reg_email and reg_password:
+                    signup_user(reg_email.strip(), reg_password)
+                else:
+                    st.error("נא להזין אימייל וסיסמה תקינים")
+            
     st.stop()
 
 # --- Main App (Logged In) ---
@@ -106,22 +121,52 @@ user_id = st.session_state["user"].id
 profile_res = supabase.table("user_profiles").select("*").eq("user_id", user_id).execute()
 profile_data = profile_res.data[0] if profile_res.data else None
 
+# --- ONBOARDING FORM ---
 if not profile_data:
     st.title("👋 ברוך הבא! בוא נגדיר את הפרופיל שלך")
+    st.write("הכנס את הנתונים שלך כדי שנחשב עבורך את היעדים היומיים המדויקים:")
+    
     with st.form("onboarding_form"):
         gender = st.radio("מין", ["גבר", "אישה"])
         age = st.number_input("גיל", min_value=12, max_value=120, value=30)
         height = st.number_input("גובה (בס\"מ)", min_value=100.0, max_value=230.0, value=175.0)
         weight = st.number_input("משקל (בק\"ג)", min_value=30.0, max_value=250.0, value=75.0)
-        activity_str = st.selectbox("רמת פעילות גופנית", ["יושבנית (ללא אימונים)", "קל (1-2 אימונים בשבוע)", "בינוני (3-4 אימונים בשבוע)", "גבוהה (5+ אימונים בשבוע)"])
-        goal_str = st.selectbox("מה המטרה שלך?", ["חיטוב / ירידה במשקל", "שמירה על המשקל", "מסה / עליה במסת שריר"])
+        
+        activity_str = st.selectbox("רמת פעילות גופנית", [
+            "יושבנית (ללא אימונים)",
+            "קל (1-2 אימונים בשבוע)",
+            "בינוני (3-4 אימונים בשבוע)",
+            "גבוהה (5+ אימונים בשבוע)"
+        ])
+        
+        goal_str = st.selectbox("מה המטרה שלך?", [
+            "חיטוב / ירידה במשקל",
+            "שמירה על המשקל",
+            "מסה / עליה במסת שריר"
+        ])
+        
         submit_profile = st.form_submit_button("חשב יעדים ושמור")
         
         if submit_profile:
-            act_map = {"יושבנית (ללא אימונים)": 1.2, "קל (1-2 אימונים בשבוע)": 1.375, "בינוני (3-4 אימונים בשבוע)": 1.55, "גבוהה (5+ אימונים בשבוע)": 1.725}
+            act_map = {
+                "יושבנית (ללא אימונים)": 1.2,
+                "קל (1-2 אימונים בשבוע)": 1.375,
+                "בינוני (3-4 אימונים בשבוע)": 1.55,
+                "גבוהה (5+ אימונים בשבוע)": 1.725
+            }
             act_val = act_map[activity_str]
-            supabase.table("user_profiles").insert({"user_id": user_id, "gender": gender, "age": int(age), "height": float(height), "weight": float(weight), "activity_level": act_val, "goal": goal_str}).execute()
             
+            supabase.table("user_profiles").insert({
+                "user_id": user_id,
+                "gender": gender,
+                "age": int(age),
+                "height": float(height),
+                "weight": float(weight),
+                "activity_level": act_val,
+                "goal": goal_str
+            }).execute()
+            
+            # BMR Calculation (Mifflin-St Jeor)
             bmr = (10 * weight) + (6.25 * height) - (5 * age) + (5 if gender == "גבר" else -161)
             tdee = bmr * act_val
             
@@ -136,11 +181,20 @@ if not profile_data:
             target_c = (target_cal - (target_p * 4) - (target_f * 9)) / 4
             
             today_str = date.today().strftime("%Y-%m-%d")
-            supabase.table("daily_goals").upsert({"user_id": user_id, "date": today_str, "target_calories": round(target_cal), "target_protein": round(target_p), "target_carbs": round(target_c), "target_fat": round(target_f)}).execute()
+            supabase.table("daily_goals").upsert({
+                "user_id": user_id,
+                "date": today_str,
+                "target_calories": round(target_cal),
+                "target_protein": round(target_p),
+                "target_carbs": round(target_c),
+                "target_fat": round(target_f)
+            }).execute()
+            
+            st.success("הפרופיל והיעדים הוגדרו בהצלחה!")
             st.rerun()
     st.stop()
 
-# Existing User Layout
+# --- APP FOR EXISTING USER ---
 st.sidebar.write(f"👤 מחובר כ: **{st.session_state['user'].email}**")
 if st.sidebar.button("התנתק"):
     logout_user()
@@ -151,7 +205,26 @@ st.sidebar.header("📅 תאריך ויעדים")
 selected_date = st.sidebar.date_input("בחר תאריך", date.today()).strftime("%Y-%m-%d")
 
 goals_res = supabase.table("daily_goals").select("*").eq("user_id", user_id).eq("date", selected_date).execute()
-user_goals = goals_res.data[0] if goals_res.data else {"target_calories": 2200, "target_protein": 170, "target_carbs": 220, "target_fat": 60}
+user_goals = goals_res.data[0] if goals_res.data else {
+    "target_calories": 2200, "target_protein": 170, "target_carbs": 220, "target_fat": 60
+}
+
+with st.sidebar.expander("הגדר/עדכן יעדים ליום זה"):
+    target_cal = st.number_input("יעד קלוריות", value=float(user_goals["target_calories"]), step=50.0)
+    target_p = st.number_input("יעד חלבון (ג')", value=float(user_goals["target_protein"]), step=5.0)
+    target_c = st.number_input("יעד פחמימות (ג')", value=float(user_goals["target_carbs"]), step=5.0)
+    target_f = st.number_input("יעד שומן (ג')", value=float(user_goals["target_fat"]), step=5.0)
+    if st.button("שמור יעדים"):
+        supabase.table("daily_goals").upsert({
+            "user_id": user_id,
+            "date": selected_date,
+            "target_calories": target_cal,
+            "target_protein": target_p,
+            "target_carbs": target_c,
+            "target_fat": target_f
+        }).execute()
+        st.success("היעדים נשמרו!")
+        st.rerun()
 
 tab_log, tab_auto_add, tab_ai = st.tabs(["📝 יומן אכילה", "🔍 חיפוש והוספה מהירה", "🤖 יועץ תזונה AI"])
 
@@ -167,9 +240,27 @@ with tab_auto_add:
             if data:
                 item_name = data["name"]
                 existing = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", item_name).execute()
-                food_id = existing.data[0]["id"] if existing.data else supabase.table("food_items").insert({"user_id": user_id, "name": item_name, "calories_per_100g": data["cal"], "protein_per_100g": data["p"], "carbs_per_100g": data["c"], "fat_per_100g": data["f"]}).execute().data[0]["id"]
+                
+                if existing.data:
+                    food_id = existing.data[0]["id"]
+                else:
+                    new_item = supabase.table("food_items").insert({
+                        "user_id": user_id,
+                        "name": item_name,
+                        "calories_per_100g": data["cal"],
+                        "protein_per_100g": data["p"],
+                        "carbs_per_100g": data["c"],
+                        "fat_per_100g": data["f"]
+                    }).execute()
+                    food_id = new_item.data[0]["id"]
 
-                supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": food_id, "amount_grams": amount_input, "meal_type": meal_type_sel}).execute()
+                supabase.table("food_log").insert({
+                    "user_id": user_id,
+                    "date": selected_date,
+                    "food_id": food_id,
+                    "amount_grams": amount_input,
+                    "meal_type": meal_type_sel
+                }).execute()
                 st.success(f"התווסף בהצלחה! ({item_name} - {amount_input} גרם)")
                 st.rerun()
             else:
@@ -234,27 +325,26 @@ with tab_ai:
         prompt = custom_q if q_option == "אחר (הקלד שאלה חופשית)" else q_option
         
         with st.spinner("מעבד תשובה..."):
-            # Rules for Cheat Days & Special Advice
             if "יום פינוק" in prompt or "Cheat Day" in prompt:
                 st.markdown("""
                 ### 🍕 הנחיות לשילוב יום פינוק (Refeed / Cheat Meal):
-                * **תדירות מומלצת:** פעם בשבועיים (בחיטוב קפדני) או פעם בשבוע (בשמירה על המשקל / חילוף חומרים גבוה).
-                * **איך לבצע נכון:** עדיף להתמקד ב-**Refeed פחמימות** (העלאת פחמימות תוך שמירה על חלבון ומינימום שומן) ולא בארוחה ג'אנק חסרת שליטה.
-                * **ביום הפינוק:** שמור על יעד החלבון היומי שלך (כ-170–200 ג') כדי למנוע פירוק שריר.
-                * **טיפ זהב:** תזמן את יום הפינוק ביום של אימון כוח קשה (כמו יום רגליים/גב) – כך הקלוריות יופנו לשיקום השריר ולא לאוגר שומן.
+                * **תדירות מומלצת:** פעם בשבועיים (בחיטוב קפדני) או פעם בשבוע (בשמירה על המשקל).
+                * **איך לבצע נכון:** עדיף להתמקד ב-**Refeed פחמימות** (העלאת פחמימות תוך שמירה על חלבון ומינימום שומן).
+                * **ביום הפינוק:** שמור על יעד החלבון היומי שלך כדי למנוע פירוק שריר.
+                * **טיפ זהב:** תזמן את יום הפינוק ביום של אימון כוח קשה – כך הקלוריות יופנו לשיקום השריר.
                 """)
             elif "אכלתי יותר מדי" in prompt:
                 st.markdown("""
                 ### ⚖️ איך לאזן חריגה קלורית:
                 1. **אל תרעיב את עצמך מחר!** הרעבה מובילה למעגל סגור של בולמוסים.
-                2. **קזז מעט פחמימות ושומן:** ביום-יומיים הבאים קצץ כ-200-300 קלוריות מהפחמימות והשומן, אך **שמור על החלבון גבוה**.
-                3. **שתייה ומים:** חריגה במלחים/פחמימות גורמת לאגירת מים. שתה 3-4 ליטר מים ביום למחרת כדי לנער את הנוזלים.
-                4. **הוסף צעדים:** הליכה של 20–30 דקות תסייע לשרוף חלק מהעודף ללא עומס על התאוששות השריר.
+                2. **קזז מעט פחמימות ושומן:** ביום-יומיים הבאים קצץ כ-200-300 קלוריות, אך **שמור על החלבון גבוה**.
+                3. **שתייה ומים:** שתה 3-4 ליטר מים ביום למחרת כדי לנער נוזלים.
+                4. **הוסף צעדים:** הליכה של 20–30 דקות תסייע לשרוף חלק מהעודף.
                 """)
             elif "אירוע" in prompt:
                 st.markdown("""
                 ### 🥂 איך להתכונן לאירוע / מסעדה:
-                * **במהלך היום:** תאכל בעיקר חלבון רזה (חזה עוף, טונה, קוטג') וירקות. תחסוך את רוב הפחמימות והשומן לערב.
+                * **במהלך היום:** תאכל בעיקר חלבון רזה וירקות. תחסוך את רוב הפחמימות והשומן לערב.
                 * **באירוע:** התחל עם מנת חלבון (בשר/דג) וירקות.
                 * **אל תתעד בלחץ:** תיהנה מהאירוע, ותחזור ליומן הרגיל למחרת בבוקר.
                 """)
@@ -263,5 +353,5 @@ with tab_ai:
                 ### 💡 המלצת תזונה מותאמת:
                 עבור המטרה שלך (**{profile_data.get('goal', 'תזונה מאוזנת')}**):
                 * הקפד על פיזור החלבון לאורך 3-4 ארוחות ביום.
-                * התאוששות ושינה של 7–8 שעות בלילה קריטיות להתקדמות לא פחות מגרם החלבון.
+                * התאוששות ושינה של 7–8 שעות בלילה קריטיות להתקדמות.
                 """)
