@@ -207,11 +207,12 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# --- מאגר מובנה ענק ומקיף (כולל משקאות חלבון ואבקות חלבון מהסופר) ---
+# --- מאגר מובנה ענק ומקיף (כולל משקאות חלבון 40g, 25g ואבקות) ---
 LOCAL_DATABASE = {
-    "משקה חלבון יטבתה PRO": {"cal": 52.0, "p": 8.3, "c": 3.8, "f": 0.5},
-    "משקה חלבון תנובה GO": {"cal": 50.0, "p": 8.0, "c": 4.0, "f": 0.4},
-    "משקה חלבון שטראוס": {"cal": 50.0, "p": 8.0, "c": 4.0, "f": 0.5},
+    "משקה חלבון יטבתה PRO 40g": {"cal": 64.0, "p": 16.0, "c": 3.2, "f": 0.4}, # מחושב לפי 100 מ"ל (בקבוק 250 מ"ל = 160 קלוריות, 40 גרם חלבון)
+    "משקה חלבון יטבתה PRO 25g": {"cal": 52.0, "p": 10.0, "c": 3.8, "f": 0.5}, # בקבוק 250 מ"ל = 130 קלוריות, 25 גרם חלבון
+    "משקה חלבון תנובה GO 25g": {"cal": 50.0, "p": 10.0, "c": 4.0, "f": 0.4},
+    "משקה חלבון שטראוס 25g": {"cal": 50.0, "p": 10.0, "c": 4.0, "f": 0.5},
     "מעדן מילקי פרו": {"cal": 85.0, "p": 10.0, "c": 8.0, "f": 1.5},
     "יוגורט חלבון 20g": {"cal": 60.0, "p": 10.0, "c": 4.0, "f": 0.4},
     "אבקת חלבון (סקופ סטנדרטי)": {"cal": 400.0, "p": 80.0, "c": 6.0, "f": 3.0},
@@ -467,7 +468,7 @@ with tab_auto_add:
     with col_u1:
         chosen_unit = st.selectbox(t["unit_type"], unit_options, key="food_unit_selection")
     with col_u2:
-        raw_amount = st.number_input(t["amount_val"], min_value=0.1, value=250.0 if "משקה חלבון" in active_search_name else (30.0 if "סקופ" in chosen_unit else (1.0 if chosen_unit in ["בקבוק / יחידה", "יחידות"] else 100.0)), step=1.0 if chosen_unit != "גרם" else 10.0)
+        raw_amount = st.number_input(t["amount_val"], min_value=0.1, value=1.0 if chosen_unit in ["בקבוק / יחידה", "סקופ", "יחידות"] else 100.0, step=1.0 if chosen_unit != "גרם" else 10.0)
 
     # המרת הכמות לצורך חישוב תזונתי מדויק מאחורי הקלעים
     if chosen_unit == "כפות":
@@ -475,8 +476,8 @@ with tab_auto_add:
     elif chosen_unit == "כפיות":
         amount_input = raw_amount * 5.0
     elif chosen_unit == "בקבוק / יחידה":
-        if "משקה חלבון" in active_search_name or "תנובה" in active_search_name or "יטבתה" in active_search_name:
-            amount_input = raw_amount * 250.0
+        if "משקה חלבון" in active_search_name or "תנובה" in active_search_name or "יטבתה" in active_search_name or "שטראוס" in active_search_name:
+            amount_input = raw_amount * 250.0 # בקבוק משקה חלבון סטנדרטי הוא 250 מ"ל
         elif "טונה" in active_search_name:
             amount_input = raw_amount * 112.0
         elif "קוטג'" in active_search_name or "גבינה" in active_search_name:
@@ -484,7 +485,7 @@ with tab_auto_add:
         else:
             amount_input = raw_amount * 100.0
     elif chosen_unit == "סקופ":
-        amount_input = raw_amount * 30.0
+        amount_input = raw_amount * 30.0 # סקופ אבקת חלבון סטנדרטי שוקל כ-30 גרם
     elif chosen_unit == "יחידות":
         if "ביצה" in active_search_name:
             amount_input = raw_amount * 50.0
