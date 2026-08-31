@@ -226,11 +226,11 @@ st.markdown(
         -webkit-backdrop-filter: blur(20px);
         border: 1px solid rgba(0, 122, 255, 0.2);
         border-radius: 20px;
-        padding: 20px 16px;
+        padding: 22px 16px;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.12);
         margin-bottom: 14px;
         text-align: center;
-        min-height: 145px;
+        min-height: 155px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -259,7 +259,7 @@ st.markdown(
         line-height: 1.4;
     }}
 
-    /* עיצוב כפתורי הוספת מים כך שיראו בדיוק כמו הווידג'טים וישבו ברווח אחיד */
+    /* עיצוב כפתורי הוספת מים כך שיהיו גדולים, מרובעים, מזמינים ובדיוק באותו סגנון */
     .stButton > button {{
         background: linear-gradient(135deg, rgba(0, 122, 255, 0.06), rgba(88, 86, 214, 0.06)) !important;
         backdrop-filter: blur(20px) !important;
@@ -267,10 +267,10 @@ st.markdown(
         border: 1px solid rgba(0, 122, 255, 0.2) !important;
         border-radius: 20px !important;
         color: {text_color} !important;
-        height: 145px !important;
+        height: 155px !important;
         width: 100% !important;
         font-weight: 700 !important;
-        font-size: 1.1em !important;
+        font-size: 1.15em !important;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.12) !important;
         display: flex !important;
         flex-direction: column !important;
@@ -305,7 +305,7 @@ st.markdown(
             margin-bottom: 10px;
         }}
         .stButton > button {{
-            height: 80px !important;
+            height: 85px !important;
         }}
     }}
     </style>
