@@ -4,6 +4,26 @@ import urllib.parse
 from datetime import date
 from supabase import create_client, Client
 
+# --- Streamlit Page Config & RTL Style ---
+st.set_page_config(page_title="מחשבון תזונה ויומן אכילה", layout="wide")
+
+# הוספת עיצוב תומך עברית מלאה (RTL)
+st.markdown(
+    """
+    <style>
+    div.stMarkdown, div.stButton, div.stTextInput, div.stSelectbox, div.stRadio, div.stNumberInput, div.stDateInput {
+        direction: rtl;
+        text-align: right;
+    }
+    .st-emotion-cache-16idsys p, .st-emotion-cache-z5fcl4 {
+        direction: rtl;
+        text-align: right;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # --- Supabase Initialization ---
 @st.cache_resource
 def init_supabase() -> Client:
@@ -12,8 +32,6 @@ def init_supabase() -> Client:
     return create_client(url, key)
 
 supabase = init_supabase()
-
-st.set_page_config(page_title="מחשבון תזונה ויומן אכילה", layout="wide")
 
 # --- מאגר מובנה מהיר בעברית ---
 LOCAL_DATABASE = {
@@ -80,14 +98,6 @@ def signup_user(email, password):
     except Exception as e:
         st.error(f"שגיאה בהרשמה: {e}")
 
-def login_with_provider(provider):
-    try:
-        res = supabase.auth.sign_in_with_oauth({"provider": provider})
-        if res.url:
-            st.markdown(f"[לחץ כאן להשלמת התחברות עם {provider.capitalize()}]({res.url})")
-    except Exception as e:
-        st.error(f"שגיאה בהתחברות באמצעות {provider}: {e}")
-
 def logout_user():
     supabase.auth.sign_out()
     st.session_state["user"] = None
@@ -112,15 +122,6 @@ if not st.session_state["user"]:
                     login_user(email.strip(), password, remember_me)
                 else:
                     st.error("נא להזין אימייל וסיסמה")
-
-        st.divider()
-        st.write("או התחבר באמצעות:")
-        col_g, col_a = st.columns(2)
-        if col_g.button("🌐 התחבר עם Google"):
-            login_with_provider("google")
-        if col_a.button("🍎 התחבר עם Apple"):
-            login_with_provider("apple")
-            
     with auth_tab2:
         with st.form("signup_form"):
             reg_email = st.text_input("אימייל להרשמה", key="reg_email")
@@ -192,7 +193,7 @@ selected_date = st.sidebar.date_input("בחר תאריך", date.today()).strftim
 goals_res = supabase.table("daily_goals").select("*").eq("user_id", user_id).eq("date", selected_date).execute()
 user_goals = goals_res.data[0] if goals_res.data else {"target_calories": 2200, "target_protein": 170, "target_carbs": 220, "target_fat": 60}
 
-tab_log, tab_auto_add, tab_camera, tab_ai = st.tabs(["📝 יומן אכילה", "🔍 חיפוש והוספה", "📸 סריקת תמונה", "🤖 יועץ AI"])
+tab_log, tab_auto_add, tab_camera, tab_ai, tab_settings = st.tabs(["📝 יומן אכילה", "🔍 חיפוש והוספה", "📸 סריקת תמונה", "🤖 יועץ AI", "⚙️ הגדרות פרופיל"])
 
 with tab_auto_add:
     st.subheader("חפש מאכל")
@@ -212,7 +213,7 @@ with tab_auto_add:
                 st.success(f"התווסף בהצלחה! ({item_name} - {amount_input} גרם)")
                 st.rerun()
             else:
-                st.error("לא נמאסו נתונים תזונתיים. נסה לחפש מאכל מתוך הרשימה הבסיסית או באנגלית.")
+                st.error("לא נמצאו נתונים תזונתיים. נסה לחפש מאכל מתוך הרשימה הבסיסית או באנגלית.")
 
 with tab_camera:
     st.subheader("📸 העלה תמונה של הארוחה")
@@ -224,9 +225,8 @@ with tab_camera:
     if uploaded_file is not None:
         st.image(uploaded_file, caption="תמונת הארוחה שהועלתה", width=300)
         
-        if st.button("זאה רכיבים והוסף ליומן"):
+        if st.button("זהה רכיבים והוסף ליומן"):
             with st.spinner("מנתח את התמונה..."):
-                # הערכה מובנית לשריפת מנה ממוצעת
                 est_name = "ארוחה מצולמת (משוערת)"
                 est_cal = 450.0
                 est_p = 30.0
@@ -286,7 +286,7 @@ with tab_ai:
     
     user_query = st.text_area("הקלד את השאלה שלך כאן:", placeholder="למשל: מתי מומלץ לשלב יום פינוק? או איך לאזן חריגה בקלוריות?")
     
-    if st.button("שלחשאלה ל-AI"):
+    if st.button("שלח שאלה ל-AI"):
         if user_query.strip():
             with st.spinner("מעבד תשובה..."):
                 prompt = user_query.strip()
@@ -315,3 +315,95 @@ with tab_ai:
                     """)
         else:
             st.warning("נא להקליד שאלה בקובייה לפני הלחיצה.")
+
+# --- TAB: SETTINGS ---
+with tab_settings:
+    st.subheader("⚙️ הגדרות פרופיל ופרטי חשבון")
+    st.write("כאן תוכל לעדכן את הנתונים האישיים שלך, את המטרות, וכן לשנות את פרטי ההתחברות שלך.")
+
+    with st.form("settings_form"):
+        st.markdown("### 👤 נתונים אישיים ויעדים")
+        
+        genders = ["גבר", "אישה"]
+        current_gender_idx = genders.index(profile_data.get("gender", "גבר")) if profile_data.get("gender") in genders else 0
+        s_gender = st.radio("מין", genders, index=current_gender_idx)
+        
+        s_age = st.number_input("גיל", min_value=12, max_value=120, value=int(profile_data.get("age", 30)))
+        s_height = st.number_input("גובה (בס\"מ)", min_value=100.0, max_value=230.0, value=float(profile_data.get("height", 175.0)))
+        s_weight = st.number_input("משקל (בק\"ג)", min_value=30.0, max_value=250.0, value=float(profile_data.get("weight", 75.0)))
+        
+        activities = ["יושבנית (ללא אימונים)", "קל (1-2 אימונים בשבוע)", "בינוני (3-4 אימונים בשבוע)", "גבוהה (5+ אימונים בשבוע)"]
+        s_activity = st.selectbox("רמת פעילות גופנית", activities)
+        
+        goals = ["חיטוב / ירידה במשקל", "שמירה על המשקל", "מסה / עליה במסת שריר"]
+        current_goal = profile_data.get("goal", "שמירה על המשקל")
+        s_goal = st.selectbox("מה המטרה שלך?", goals, index=goals.index(current_goal) if current_goal in goals else 1)
+        
+        submit_settings = st.form_submit_button("שמור שינויים בפרופיל")
+        
+        if submit_settings:
+            act_map = {"יושבנית (ללא אימונים)": 1.2, "קל (1-2 אימונים בשבוע)": 1.375, "בינוני (3-4 אימונים בשבוע)": 1.55, "גבוהה (5+ אימונים בשבוע)": 1.725}
+            act_val = act_map[s_activity]
+            
+            # עדכון טבלת הפרופיל ב-Supabase
+            supabase.table("user_profiles").update({
+                "gender": s_gender,
+                "age": int(s_age),
+                "height": float(s_height),
+                "weight": float(s_weight),
+                "activity_level": act_val,
+                "goal": s_goal
+            }).eq("user_id", user_id).execute()
+            
+            # חישוב מחדש של היעדים הקלוריים
+            bmr = (10 * s_weight) + (6.25 * s_height) - (5 * s_age) + (5 if s_gender == "גבר" else -161)
+            tdee = bmr * act_val
+            
+            if s_goal == "חיטוב / ירידה במשקל":
+                target_cal, target_p = tdee - 500, s_weight * 2.0
+            elif s_goal == "מסה / עליה במסת שריר":
+                target_cal, target_p = tdee + 300, s_weight * 2.0
+            else:
+                target_cal, target_p = tdee, s_weight * 1.8
+                
+            target_f = s_weight * 0.9
+            target_c = (target_cal - (target_p * 4) - (target_f * 9)) / 4
+            
+            today_str = date.today().strftime("%Y-%m-%d")
+            supabase.table("daily_goals").upsert({
+                "user_id": user_id, 
+                "date": today_str, 
+                "target_calories": round(target_cal), 
+                "target_protein": round(target_p), 
+                "target_carbs": round(target_c), 
+                "target_fat": round(target_f)
+            }).execute()
+            
+            st.success("הפרופיל והיעדים עודכנו בהצלחה!")
+            st.rerun()
+
+    st.divider()
+    st.markdown("### 🔐 עדכון פרטי חשבון (אימייל וסיסמה)")
+    with st.form("account_update_form"):
+        new_email = st.text_input("אימייל חדש", value=st.session_state["user"].email)
+        new_password = st.text_input("סיסמה חדשה (השאר ריק אם אין ברצונך לשנות)", type="password")
+        submit_account = st.form_submit_button("עדכן פרטי התחברות")
+        
+        if submit_account:
+            update_attrs = {}
+            if new_email and new_email != st.session_state["user"].email:
+                update_attrs["email"] = new_email.strip()
+            if new_password:
+                if len(new_password) >= 6:
+                    update_attrs["password"] = new_password
+                else:
+                    st.error("הסיסמה חייבת להכיל לפחות 6 תווים.")
+            
+            if update_attrs:
+                try:
+                    supabase.auth.update_user(update_attrs)
+                    st.success("פרטי החשבון עודכנו בהצלחה! ייתכן שתידרש התחברות מחדש אם שינית אימייל.")
+                except Exception as e:
+                    st.error(f"שגיאה בעדכון פרטי החשבון: {e}")
+            else:
+                st.info("לא בוצעו שינויים.")
