@@ -309,7 +309,6 @@ supabase = init_supabase()
 
 # --- מאגר מובנה ענק ועשיר (כולל משקאות, מים וקפה) ---
 LOCAL_DATABASE = {
-    # --- 💧 משקאות ומים ---
     "מים (כוס / 250 מ\"ל)": {"cal": 0.0, "p": 0.0, "c": 0.0, "f": 0.0},
     "בקבוק מים מינרליים (500 מ\"ל)": {"cal": 0.0, "p": 0.0, "c": 0.0, "f": 0.0},
     "בקבוק מים גדול (1.5 ליטר)": {"cal": 0.0, "p": 0.0, "c": 0.0, "f": 0.0},
@@ -714,7 +713,7 @@ selected_date = st.sidebar.date_input("בחר תאריך", date.today()).strftim
 goals_res = supabase.table("daily_goals").select("*").eq("user_id", user_id).eq("date", selected_date).execute()
 user_goals = goals_res.data[0] if goals_res.data else {"target_calories": 2200, "target_protein": 170, "target_carbs": 220, "target_fat": 60}
 
-# יצירת הלשוניות (כולל לשונית תמונות מעקב חדשה)
+# יצירת הלשוניות
 tab_log, tab_auto_add, tab_workouts, tab_history, tab_photos, tab_camera, tab_ai, tab_settings = st.tabs([t["tab_log"], t["tab_search"], t["tab_workouts"], t["tab_history"], t["tab_photos"], t["tab_camera"], t["tab_ai"], t["tab_settings"]])
 
 with tab_auto_add:
@@ -900,10 +899,10 @@ with tab_workouts:
     else:
         st.info("אין אימונים מתועדים לתאריך זה.")
 
-# --- לשונית תמונות מעקב אישי (רעיון של אשתך!) ---
+# --- לשונית תמונות מעקב אישי ---
 with tab_photos:
     st.subheader("📸 גלריית תמונות מעקב ושינוי פיזי לאורך זמן")
-    st.write("צצלם את עצמך קבוע, העלה את התמונה לכאן עם תאריך המדידה, ועקוב אחר השינוי המדהים שלך:")
+    st.write("צלם את עצמך קבוע, העלה את התמונה לכאן עם תאריך המדידה, ועקוב אחר השינוי המדהים שלך:")
 
     with st.form("upload_progress_photo_form", clear_on_submit=True):
         photo_file = st.file_uploader("בחר תמונת מעקב (JPG / PNG):", type=["jpg", "jpeg", "png"])
@@ -930,9 +929,9 @@ with tab_photos:
                     st.success("✅ התמונה נשמרה בהצלחה בגלריה האישית!")
                     st.rerun()
                 except Exception as e:
-                    st.error(f"שגיאה בשמירת התמונה (ודא שקיימת טבלת progress_photos או שמור כטקסט): {e}")
+                    st.error(f"שגיאה בשמירת התמונה: {e}")
             else:
-                    st.warning("נא לבחור תמונה להעלאה.")
+                st.warning("נא לבחור תמונה להעלאה.")
 
     st.divider()
     st.subheader("🖼️ האלבום שלך")
@@ -949,8 +948,8 @@ with tab_photos:
             col_target = cols[idx % 2]
             with col_target:
                 st.markdown(f"""
-                <div class="ios-widget" style="padding: 12px; min-height: unset;">
-                    <p style="font-weight: bold; margin-bottom: 6px;">📅 תאריך: {p.get('date', 'לא ידוע')}</p>
+                <div class="ios-widget" style="padding: 10px; min-height: unset; margin-bottom: 8px;">
+                    <p style="font-weight: bold; margin-bottom: 4px; font-size: 0.95em;">📅 תאריך: {p.get('date', 'לא ידוע')}</p>
                 </div>
                 """, unsafe_allow_html=True)
                 if p.get("image_url"):
@@ -968,7 +967,7 @@ with tab_photos:
     else:
         st.info("💡 עדיין לא העלת תמונות מעקב. זה הזמן לצלם את התמונה הראשונה!")
 
-# --- מסך היסטוריה ויומן (כולל גרף משקל) ---
+# --- מסך היסטוריה ויומן ---
 with tab_history:
     st.subheader("📅 יומן היסטוריה, בדיקת עמידה ביעדים ומעקב משקל")
     
@@ -1084,7 +1083,7 @@ with tab_camera:
             st.success("הארוחה נוספה!")
             st.rerun()
 
-# --- מסך יומן אכילה ראשי (כולל מעקב מים יומי חכם) ---
+# --- מסך יומן אכילה ראשי (כולל מעקב מים קומפקטי ומעוצב) ---
 with tab_log:
     st.subheader(f"תיעוד ארוחות ושתייה לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
@@ -1095,7 +1094,6 @@ with tab_log:
     consumed_c = sum(e["food_items"]["carbs_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
     consumed_f = sum(e["food_items"]["fat_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
 
-    # חישוב כמות המים שנצרכה היום (במיליליטר) מתוך הלוגים
     total_water_ml = sum(e["amount_grams"] for e in entries if any(w in e["food_items"]["name"] for w in ["מים", "בקבוק מים"]))
     water_glasses = round(total_water_ml / 250.0, 1)
 
@@ -1104,36 +1102,37 @@ with tab_log:
 
     st.divider()
     
-    # --- ווידג'ט מעקב מים יומי מרהיב ---
-    st.markdown(f"""
-    <div class="ios-widget" style="background: linear-gradient(135deg, rgba(0, 122, 255, 0.1), rgba(88, 86, 214, 0.1)); border: 1px solid rgba(0, 122, 255, 0.3);">
-        <h4 style="color: #007AFF;">💧 מעקב שתייה ומים יומי</h4>
-        <h2>{int(total_water_ml)} מ''ל ({water_glasses} כוסות)</h2>
-        <p>יעד מומלץ יומי: 3,000 מ''ל (12 כוסות)</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    col_w_btn1, col_w_btn2, col_w_btn3 = st.columns(3)
-    if col_w_btn1.button("➕ כוס מים (250 מ\"ל)"):
-        w_item_name = "מים (כוס / 250 מ\"ל)"
-        existing_w = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", w_item_name).execute()
-        w_food_id = existing_w.data[0]["id"] if existing_w.data else supabase.table("food_items").insert({"user_id": user_id, "name": w_item_name, "calories_per_100g": 0.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 0.0}).execute().data[0]["id"]
-        supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": w_food_id, "amount_grams": 250.0, "meal_type": t["breakfast"]}).execute()
-        st.rerun()
-
-    if col_w_btn2.button("➕ בקבוק מים (500 מ\"ל)"):
-        w_item_name = "בקבוק מים מינרליים (500 מ\"ל)"
-        existing_w = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", w_item_name).execute()
-        w_food_id = existing_w.data[0]["id"] if existing_w.data else supabase.table("food_items").insert({"user_id": user_id, "name": w_item_name, "calories_per_100g": 0.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 0.0}).execute().data[0]["id"]
-        supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": w_food_id, "amount_grams": 500.0, "meal_type": t["lunch"]}).execute()
-        st.rerun()
-
-    if col_w_btn3.button("➕ בקבוק ענק (1.5 ליטר)"):
-        w_item_name = "בקבוק מים גדול (1.5 ליטר)"
-        existing_w = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", w_item_name).execute()
-        w_food_id = existing_w.data[0]["id"] if existing_w.data else supabase.table("food_items").insert({"user_id": user_id, "name": w_item_name, "calories_per_100g": 0.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 0.0}).execute().data[0]["id"]
-        supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": w_food_id, "amount_grams": 1500.0, "meal_type": t["dinner"]}).execute()
-        st.rerun()
+    # --- ווידג'ט מעקב מים קומפקטי ומעוצב ---
+    c_water_info, c_water_btns = st.columns([1.3, 1.7])
+    with c_water_info:
+        st.markdown(f"""
+        <div class="ios-widget" style="min-height: 90px; padding: 12px; margin-bottom: 10px; background: linear-gradient(135deg, rgba(0, 122, 255, 0.08), rgba(88, 86, 214, 0.08)); border: 1px solid rgba(0, 122, 255, 0.25);">
+            <h4 style="color: #007AFF; font-size: 1.05em !important; margin-bottom: 2px !important;">💧 מעקב מים יומי</h4>
+            <h2 style="font-size: 1.6em !important; margin: 2px 0 !important;">{int(total_water_ml)} מ''ל</h2>
+            <p style="font-size: 0.85em !important;">({water_glasses} כוסות | יעד: 3,000 מ''ל)</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with c_water_btns:
+        st.markdown("<div style='font-size: 0.9em; font-weight: bold; margin-bottom: 4px;'>הוספה מהירה של מים:</div>", unsafe_allow_html=True)
+        wb1, wb2, wb3 = st.columns(3)
+        if wb1.button("+250 מ\"ל"):
+            w_item_name = "מים (כוס / 250 מ\"ל)"
+            existing_w = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", w_item_name).execute()
+            w_food_id = existing_w.data[0]["id"] if existing_w.data else supabase.table("food_items").insert({"user_id": user_id, "name": w_item_name, "calories_per_100g": 0.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 0.0}).execute().data[0]["id"]
+            supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": w_food_id, "amount_grams": 250.0, "meal_type": t["breakfast"]}).execute()
+            st.rerun()
+        if wb2.button("+500 מ\"ל"):
+            w_item_name = "בקבוק מים מינרליים (500 מ\"ל)"
+            existing_w = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", w_item_name).execute()
+            w_food_id = existing_w.data[0]["id"] if existing_w.data else supabase.table("food_items").insert({"user_id": user_id, "name": w_item_name, "calories_per_100g": 0.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 0.0}).execute().data[0]["id"]
+            supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": w_food_id, "amount_grams": 500.0, "meal_type": t["lunch"]}).execute()
+            st.rerun()
+        if wb3.button("+1.5 ליטר"):
+            w_item_name = "בקבוק מים גדול (1.5 ליטר)"
+            existing_w = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", w_item_name).execute()
+            w_food_id = existing_w.data[0]["id"] if existing_w.data else supabase.table("food_items").insert({"user_id": user_id, "name": w_item_name, "calories_per_100g": 0.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 0.0}).execute().data[0]["id"]
+            supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": w_food_id, "amount_grams": 1500.0, "meal_type": t["dinner"]}).execute()
+            st.rerun()
 
     st.divider()
     st.subheader(t["daily_summary"])
