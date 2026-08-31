@@ -170,13 +170,15 @@ else:
 bg_color = "#0e1117" if is_dark else "#f8f9fa"
 text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
-widget_border = "rgba(255, 255, 255, 0.15)" if is_dark else "rgba(0, 0, 0, 0.08)"
+widget_border = "rgba(255, 255, 255, 0.2)" if is_dark else "rgba(0, 0, 0, 0.1)"
+input_bg_color = "#161b22" if is_dark else "#ffffff"
+input_text_color = "#ffffff" if is_dark else "#111111"
 
 is_rtl = "Hebrew" in selected_lang or "עברית" in selected_lang
 dir_val = "rtl" if is_rtl else "ltr"
 text_align_val = "right" if is_rtl else "left"
 
-# --- Ultimate Mobile & Dark Mode CSS Fixes ---
+# --- Ultimate Input & Dark Mode CSS Fixes ---
 st.markdown(
     f"""
     <style>
@@ -194,8 +196,18 @@ st.markdown(
         color: {text_color} !important;
     }}
 
-    input, textarea, select {{
-        -webkit-text-fill-color: {text_color} !important;
+    /* תיקון מוחלט לכל תיבות הטקסט, הבחירה והמספרים (Input / Selectbox / NumberInput) */
+    input, textarea, select, div[data-baseweb="select"] > div, div[data-baseweb="input"] > div {{
+        background-color: {input_bg_color} !important;
+        color: {input_text_color} !important;
+        -webkit-text-fill-color: {input_text_color} !important;
+        border-color: {widget_border} !important;
+    }}
+
+    /* תיקון ספציפי לטקסט המוצג בתוך שדות בחירה (Selectboxes / Dropdowns) */
+    div[data-baseweb="select"] span, div[data-baseweb="select"] div, div[data-baseweb="input"] input {{
+        color: {input_text_color} !important;
+        -webkit-text-fill-color: {input_text_color} !important;
     }}
     
     section[data-testid="stSidebar"][aria-expanded="false"] {{
@@ -214,7 +226,7 @@ st.markdown(
         direction: {dir_val} !important;
     }}
 
-    /* עיצוב מושלם לכפתורי הפעולה הראשיים (כמו הוספת מאכל) ותגובה לריחוף/לחיצה */
+    /* עיצוב מושלם לכפתורי הפעולה הראשיים ותגובה לריחוף/לחיצה */
     div.stButton > button {{
         background-color: rgba(0, 122, 255, 0.15) !important;
         color: {text_color} !important;
@@ -233,22 +245,22 @@ st.markdown(
         color: #ffffff !important;
     }}
 
-    /* תפריטי בחירה נפתחים (Selectbox / Dropdown) במצב לילה */
+    /* תפריטי בחירה נפתחים (Menu Popovers) במצב לילה */
     ul[data-baseweb="menu"],
     div[data-baseweb="popover"] {{
-        background-color: {bg_color} !important;
+        background-color: {input_bg_color} !important;
         border: 1px solid {widget_border} !important;
     }}
     ul[data-baseweb="menu"] li,
     li[role="option"] {{
-        color: {text_color} !important;
-        background-color: {bg_color} !important;
+        color: {input_text_color} !important;
+        background-color: {input_bg_color} !important;
     }}
     ul[data-baseweb="menu"] li:hover,
     li[role="option"]:hover,
     li[aria-selected="true"] {{
-        background-color: {widget_bg} !important;
-        color: {text_color} !important;
+        background-color: rgba(0, 122, 255, 0.2) !important;
+        color: {input_text_color} !important;
     }}
 
     .ios-widget {{
@@ -303,36 +315,6 @@ st.markdown(
         color: {text_color} !important;
     }}
 
-    div[data-testid="column"] div.stButton > button[key*="w_btn_"] {{
-        background: linear-gradient(135deg, rgba(0, 122, 255, 0.08), rgba(88, 86, 214, 0.08)) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        backdrop-filter: blur(20px) !important;
-        border: 1px solid rgba(0, 122, 255, 0.25) !important;
-        border-radius: 20px !important;
-        color: {text_color} !important;
-        height: 140px !important;
-        width: 100% !important;
-        font-weight: 700 !important;
-        font-size: 1.1em !important;
-        -webkit-box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.12) !important;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.12) !important;
-        display: -webkit-box !important;
-        display: -ms-flexbox !important;
-        display: flex !important;
-        -webkit-box-orient: vertical !important;
-        -webkit-box-direction: normal !important;
-        -ms-flex-direction: column !important;
-        flex-direction: column !important;
-        -webkit-box-pack: center !important;
-        -ms-flex-pack: center !important;
-        justify-content: center !important;
-        -webkit-box-align: center !important;
-        -ms-flex-align: center !important;
-        align-items: center !important;
-        -webkit-transition: all 0.2s ease-in-out !important;
-        transition: all 0.2s ease-in-out !important;
-    }}
-
     .streamlit-expanderHeader {{
         background-color: {widget_bg} !important;
         border: 1px solid {widget_border} !important;
@@ -358,9 +340,6 @@ st.markdown(
             flex: 100% !important;
             min-width: unset !important;
             margin-bottom: 10px;
-        }}
-        div[data-testid="column"] div.stButton > button[key*="w_btn_"] {{
-            height: 80px !important;
         }}
         .ios-widget {{
             min-height: 110px !important;
