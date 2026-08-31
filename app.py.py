@@ -684,7 +684,7 @@ user_goals = goals_res.data[0] if goals_res.data else {"target_calories": 2200, 
 tab_log, tab_auto_add, tab_workouts, tab_history, tab_camera, tab_ai, tab_settings = st.tabs([t["tab_log"], t["tab_search"], t["tab_workouts"], t["tab_history"], t["tab_camera"], t["tab_ai"], t["tab_settings"]])
 
 with tab_auto_add:
-    st.subheader("🔍 חיפוש והוספת מאכל או ארוחה שלמה (כולל ג'אנק פוד, פיצה, המבורגרים וצ'יט מייל)")
+    st.subheader("🔍 חיפוש והוספת מאכל")
     
     add_mode = st.radio("בחר אופן הוספה:", ["מאכל בודד", "🍽️ הוספת ארוחה שלמה בבת אחת"])
     
