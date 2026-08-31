@@ -42,7 +42,8 @@ TRANSLATIONS = {
         "tab_ai": "🤖 יועץ AI",
         "tab_settings": "⚙️ הגדרות פרופיל",
         "search_food": "חפש מאכל מהמאגר או הקלד לסינון",
-        "amount_grams": "כמות בגרמים",
+        "unit_type": "יחידת מידה",
+        "amount_val": "כמות",
         "meal_type": "לאיזו ארוחה?",
         "breakfast": "בוקר",
         "lunch": "צהריים",
@@ -101,7 +102,8 @@ TRANSLATIONS = {
         "tab_ai": "🤖 AI Advisor",
         "tab_settings": "⚙️ Profile Settings",
         "search_food": "Search food from DB or type to filter",
-        "amount_grams": "Amount in grams",
+        "unit_type": "Unit type",
+        "amount_val": "Amount",
         "meal_type": "Meal type?",
         "breakfast": "Breakfast",
         "lunch": "Lunch",
@@ -444,16 +446,53 @@ with tab_auto_add:
     
     custom_search = st.text_input("או הקלד שם מאכל אחר לחיפוש חופשי (אם לא נמצא ברשימה):", key="custom_food_input")
     
-    amount_input = st.number_input(t["amount_grams"], min_value=1.0, value=100.0, step=10.0)
+    # זיהוי סוג המאכל כדי להתאים את יחידות המידה בצורה חכמה
+    active_search_name = custom_search.strip() if custom_search.strip() else (selected_from_db if selected_from_db != "-- בחר מאכל מהרשימה (הקלד לסינון) --" else "")
+    
+    # התאמת יחידות לפי סוג המזון
+    if any(k in active_search_name for k in ["אורז", "פסטה", "קוסקוס", "בורגול", "קינואה", "כוסמת", "שיבולת שועל"]):
+        unit_options = ["גרם", "כפות", "כפיות"]
+    elif any(k in active_search_name for k in ["טונה", "קוטג'", "גבינה", "יוגורט", "חלב"]):
+        unit_options = ["גרם", "כפות", "קופסה / יחידה"]
+    elif any(k in active_search_name for k in ["עגבנייה", "מלפפון", "בננה", "תפוח", "תפוז", "אגס", "ביצה", "פיתה", "לחם"]):
+        unit_options = ["גרם", "יחידות"]
+    else:
+        unit_options = ["גרם", "כפות", "יחידות"]
+
+    col_u1, col_u2 = st.columns(2)
+    with col_u1:
+        chosen_unit = st.selectbox(t["unit_type"], unit_options, key="food_unit_selection")
+    with col_u2:
+        raw_amount = st.number_input(t["amount_val"], min_value=0.1, value=100.0 if chosen_unit == "גרם" else 1.0, step=1.0 if chosen_unit != "גרם" else 10.0)
+
+    # המרת הכמות לגרמים לצורך חישוב תזונתי מדויק מאחורי הקלעים
+    if chosen_unit == "כפות":
+        amount_input = raw_amount * 15.0  # כף סטנדרטית מכילה כ-15 גרם
+    elif chosen_unit == "כפיות":
+        amount_input = raw_amount * 5.0   # כפית סטנדרטית מכילה כ-5 גרם
+    elif chosen_unit == "קופסה / יחידה":
+        if "טונה" in active_search_name:
+            amount_input = raw_amount * 112.0 # קופסת טונה סטנדרטית מסוננת
+        elif "קוטג'" in active_search_name or "גבינה" in active_search_name:
+            amount_input = raw_amount * 250.0 # גביע קוטג' / גבינה סטנדרטי
+        else:
+            amount_input = raw_amount * 100.0
+    elif chosen_unit == "יחידות":
+        if "ביצה" in active_search_name:
+            amount_input = raw_amount * 50.0  # ביצה ממוצעת שוקלת כ-50 גרם
+        elif any(k in active_search_name for k in ["בננה", "תפוח", "תפוז", "אגס"]):
+            amount_input = raw_amount * 120.0 # פרי ממוצע שוקל כ-120 גרם
+        elif "עגבנייה" in active_search_name or "מלפפון" in active_search_name:
+            amount_input = raw_amount * 100.0 # ירק בינוני שוקל כ-100 גרם
+        else:
+            amount_input = raw_amount * 100.0
+    else:
+        amount_input = raw_amount # גרמים רגילים
+
     meal_type_sel = st.selectbox(t["meal_type"], [t["breakfast"], t["lunch"], t["dinner"], t["snack"]])
 
     if st.button(t["add_btn"]):
-        search_q = ""
-        if custom_search.strip():
-            search_q = custom_search.strip()
-        elif selected_from_db != "-- בחר מאכל מהרשימה (הקלד לסינון) --":
-            search_q = selected_from_db
-            
+        search_q = active_search_name
         if search_q:
             data = fetch_nutrition_data(search_q)
             if data:
@@ -462,7 +501,7 @@ with tab_auto_add:
                 food_id = existing.data[0]["id"] if existing.data else supabase.table("food_items").insert({"user_id": user_id, "name": item_name, "calories_per_100g": data["cal"], "protein_per_100g": data["p"], "carbs_per_100g": data["c"], "fat_per_100g": data["f"]}).execute().data[0]["id"]
 
                 supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": food_id, "amount_grams": amount_input, "meal_type": meal_type_sel}).execute()
-                st.success(f"המאכל '{item_name}' ({amount_input} גרם) התווסף בהצלחה!")
+                st.success(f"המאכל '{item_name}' ({raw_amount} {chosen_unit}) התווסף בהצלחה!")
                 st.rerun()
             else:
                 st.error("לא נמצאו נתונים תזונתיים עבור מאכל זה.")
@@ -537,7 +576,7 @@ with tab_camera:
             st.success("הארוחה נוספה!")
             st.rerun()
 
-# --- מסך יומן אכילה ראשי עם הווידג'טים הגדולים והקלאסיים במלוא הדרם ---
+# --- מסך יומן אכילה ראשי ---
 with tab_log:
     st.subheader(f"תיעוד ארוחות לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
@@ -554,7 +593,6 @@ with tab_log:
     st.divider()
     st.subheader(t["daily_summary"])
 
-    # הצגת 4 הווידג'טים הגדולים והמושלמים בדיוק כמו שביקשת
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.markdown(f"""
