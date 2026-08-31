@@ -207,7 +207,7 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# --- מאגר מובנה ענק ומקיף (כולל גרסאות גולמיות ומוכנות/מדוללות) ---
+# --- מאגר מובנה ענק ומקיף ---
 LOCAL_DATABASE = {
     # סלטים מובחרים
     "סלט ירקות קצוץ (עם כפית שמן זית)": {"cal": 55.0, "p": 1.2, "c": 4.5, "f": 4.0},
@@ -221,11 +221,9 @@ LOCAL_DATABASE = {
     "סלט קיסר (עם קרוטונים ופרמזן)": {"cal": 190.0, "p": 6.0, "c": 12.0, "f": 13.0},
     "סלט סלק מבושל קצוץ": {"cal": 45.0, "p": 1.6, "c": 10.0, "f": 0.2},
     
-    # טחינה (גם גולמית וגם מוכנה/מדוללת במים)
+    # טחינה וחמאת בוטנים
     "טחינה גולמית": {"cal": 595.0, "p": 17.0, "c": 21.0, "f": 53.8},
-    "טחינה מוכנה (מדוללת במים, מוכנה לאכילה)": {"cal": 290.0, "p": 8.5, "c": 10.5, "f": 26.9}, # מחושב לפי יחס של חצי-חצי עם מים
-    
-    # חמאת בוטנים
+    "טחינה מוכנה (מדוללת במים, מוכנה לאכילה)": {"cal": 290.0, "p": 8.5, "c": 10.5, "f": 26.9},
     "חמאת בוטנים טבעית / רגילה": {"cal": 588.0, "p": 25.0, "c": 20.0, "f": 50.0},
     
     # משקאות חלבון ואבקות
@@ -663,7 +661,7 @@ with tab_camera:
             st.success("הארוחה נוספה!")
             st.rerun()
 
-# --- מסך יומן אכילה ראשי עם אפשרות עריכת כמות ומחיקה ---
+# --- מסך יומן אכילה ראשי עם אפשרות עריכת כמות, ארוחה ומחיקה ---
 with tab_log:
     st.subheader(f"תיעוד ארוחות לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
@@ -760,11 +758,19 @@ with tab_log:
                         if st.session_state[edit_key_state]:
                             with st.form(key=f"form_edit_{e['id']}"):
                                 new_amt = st.number_input("עדכן כמות חדשה (בגרמים):", min_value=1.0, value=float(e['amount_grams']), step=10.0)
+                                
+                                available_meals = [t["breakfast"], t["lunch"], t["dinner"], t["snack"]]
+                                current_meal_idx = available_meals.index(e.get("meal_type", t["breakfast"])) if e.get("meal_type") in available_meals else 0
+                                new_meal_type = st.selectbox("שייך לארוחה:", available_meals, index=current_meal_idx)
+
                                 submitted_edit = st.form_submit_button("שמור שינוי")
                                 if submitted_edit:
-                                    supabase.table("food_log").update({"amount_grams": new_amt}).eq("id", e['id']).execute()
+                                    supabase.table("food_log").update({
+                                        "amount_grams": new_amt,
+                                        "meal_type": new_meal_type
+                                    }).eq("id", e['id']).execute()
                                     st.session_state[edit_key_state] = False
-                                    st.success("הכמות עודכנה בהצלחה!")
+                                    st.success("הפרטים עודכנו בהצלחה!")
                                     st.rerun()
                 else:
                     st.info("אין מאכלים בארוחה זו.")
