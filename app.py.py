@@ -207,7 +207,6 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# --- מאגר מובנה מהיר ---
 LOCAL_DATABASE = {
     "חזה עוף": {"cal": 165.0, "p": 31.0, "c": 0.0, "f": 3.6},
     "חזה עוף מבושל": {"cal": 165.0, "p": 31.0, "c": 0.0, "f": 3.6},
@@ -313,7 +312,6 @@ if not st.session_state["user"]:
 # --- Main App (Logged In) ---
 user_id = st.session_state["user"].id
 
-# Check profile
 profile_res = supabase.table("user_profiles").select("*").eq("user_id", user_id).execute()
 profile_data = profile_res.data[0] if profile_res.data else None
 
@@ -391,7 +389,6 @@ with tab_auto_add:
             else:
                 st.error("לא נמצאו נתונים תזונתיים.")
 
-# --- לשונית אימונים ---
 with tab_workouts:
     st.subheader(t["workouts_header"])
     
@@ -460,7 +457,7 @@ with tab_camera:
             st.success("הארוחה נוספה!")
             st.rerun()
 
-# --- מסך יומן אכילה ראשי נקי עם לשוניות מתקפלות לכל ארוחה ---
+# --- מסך יומן אכילה ראשי נקי עם תיבות מתקפלות ---
 with tab_log:
     st.subheader(f"תיעוד ארוחות לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
@@ -514,7 +511,6 @@ with tab_log:
     st.divider()
     
     if entries:
-        # מיון הארוחות לפי סוגים
         meals_map = {
             t["breakfast"]: [],
             t["lunch"]: [],
@@ -527,23 +523,18 @@ with tab_log:
             if m_type in meals_map:
                 meals_map[m_type].append(e)
             else:
-                # ברירת מחדל אם יש סוג ישן
                 if t["breakfast"] in meals_map:
                     meals_map[t["breakfast"]].append(e)
 
-        # הצגת כל ארוחה בתוך תיקיה מתקפלת (Expander) נפרדת ונظיפה
         for meal_name, meal_items in meals_map.items():
             meal_cals = sum(item["food_items"]["calories_per_100g"] * item["amount_grams"] / 100.0 for item in meal_items)
             with st.expander(f"🍽️ {meal_name} (קלוריות: {round(meal_cals, 1)}) — לחץ לפתיחה"):
                 if meal_items:
                     for e in meal_items:
                         food_item = e["food_items"]
-                        c_food, c_amt, c_del = st.columns([4, 2, 1])
+                        c_food, c_amt = st.columns([4, 2])
                         c_food.write(f"• {food_item['name']}")
                         c_amt.write(f"{e['amount_grams']} גרם")
-                        if c_del.button("🗑️", key=f"del_exp_{e['id']}"):
-                            supabase.table("food_log").delete().eq("id", e["id"]).execute()
-                            st.rerun()
                 else:
                     st.info("אין מאכלים בארוחה זו.")
     else:
