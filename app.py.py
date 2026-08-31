@@ -723,10 +723,12 @@ def safe_food_totals(entries):
         f += (fi.get("fat_per_100g", 0) or 0) * amt / 100.0
     return cal, p, c, f
 
-# --- Google Gemini AI Integration (แทนที่ Claude) ---
+# --- Google Gemini AI Integration (תמיכה במפתח מקומי או מ-secrets) ---
 def get_gemini_client():
-    # תומך בחיפוש מפתח תחת GOOGLE_API_KEY או GEMINI_API_KEY
-    api_key = st.secrets.get("GOOGLE_API_KEY", st.secrets.get("GEMINI_API_KEY", None))
+    api_key = (
+        st.session_state.get("custom_google_api_key", "").strip() or
+        st.secrets.get("GOOGLE_API_KEY", st.secrets.get("GEMINI_API_KEY", None))
+    )
     if not api_key:
         return None
     try:
@@ -1308,7 +1310,7 @@ elif selected_tab == t["tab_camera"]:
     st.subheader("📸 סריקת תמונה (זיהוי מזון בעזרת Google Gemini)")
     gemini_client = get_gemini_client()
     if not gemini_client:
-        st.warning("⚠️ מפתח Google API לא מוגדר. כדי להפעיל את סריקת התמונות, הוסף GOOGLE_API_KEY לקובץ secrets.toml (או לחלופין השתמש בחיפוש הידני).")
+        st.warning("⚠️ מפתח Google API לא מוגדר. תוכל להזין את המפתח למטה או להגדיר אותו בהגדרות/Secrets.")
 
     uploaded_file = st.file_uploader("בחר תמונה", type=["jpg", "jpeg", "png"])
     meal_type_img = st.selectbox(t["meal_type"], [t["breakfast"], t["lunch"], t["dinner"], t["snack"]], key="img_meal")
@@ -1499,7 +1501,7 @@ elif selected_tab == t["tab_ai"]:
     st.subheader("🤖 יועץ תזונה AI (Google Gemini)")
     gemini_client = get_gemini_client()
     if not gemini_client:
-        st.warning("⚠️ יועץ ה-AI אינו מוגדר. הוסף GOOGLE_API_KEY לקובץ secrets.toml כדי להפעיל את היועץ.")
+        st.warning("⚠️ יועץ ה-AI אינו מוגדר. הזן את מפתח ה-Google API בהגדרות או ב-secrets.toml.")
 
     user_query = st.text_area("שאל כל שאלה בנוגע לתזונה, האימונים או ההתקדמות שלך:")
     if st.button("שלח שאלה"):
@@ -1536,14 +1538,20 @@ elif selected_tab == t["tab_settings"]:
         
         theme_choice = st.selectbox(t["theme_label"], t["theme_options"], index=t["theme_options"].index(st.session_state["theme_mode"]) if st.session_state["theme_mode"] in t["theme_options"] else 0)
         
+        st.markdown("---")
+        st.markdown("🔑 **הגדרת מפתח Google API (לשירותי AI וסריקה)**")
+        current_custom_key = st.session_state.get("custom_google_api_key", "")
+        api_input_field = st.text_input("הכנס Google API Key (אופציונלי):", value=current_custom_key, type="password")
+
         submit_settings = st.form_submit_button(t["save_settings"])
         
         if submit_settings:
             st.session_state["theme_mode"] = theme_choice
+            st.session_state["custom_google_api_key"] = api_input_field.strip()
             supabase.table("user_profiles").update({
                 "age": int(s_age), "height": float(s_height), "weight": float(s_weight)
             }).eq("user_id", user_id).execute()
-            st.success("Updated successfully!")
+            st.success("ההגדרות עודכנו בהצלחה!")
             st.rerun()
 
     st.divider()
