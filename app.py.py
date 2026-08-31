@@ -333,11 +333,10 @@ def fetch_nutrition_data(query):
         pass
     return None
 
-# --- Persistent Auth Logic (Prevents Logout on Refresh) ---
+# --- Persistent Auth Logic ---
 if "user" not in st.session_state:
     st.session_state["user"] = None
 
-# בדיקה האם יש סשן שמור ב-Supabase ששרד את הרענון
 current_session = supabase.auth.get_session()
 if current_session and current_session.user:
     st.session_state["user"] = current_session.user
@@ -647,7 +646,7 @@ with tab_camera:
             st.success("הארוחה נוספה!")
             st.rerun()
 
-# --- מסך יומן אכילה ראשי עם אפשרות עריכת כמות, ארוחה ומחיקה ---
+# --- מסך יומן אכילה ראשי עם פירוט מלא של כל אבות המזון בתוך הארוחות ---
 with tab_log:
     st.subheader(f"תיעוד ארוחות לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
@@ -718,18 +717,45 @@ with tab_log:
 
         for meal_name, meal_items in meals_map.items():
             meal_cals = sum(item["food_items"]["calories_per_100g"] * item["amount_grams"] / 100.0 for item in meal_items)
-            with st.expander(f"🍽️ {meal_name} (קלוריות: {round(meal_cals, 1)}) — לחץ לפתיחה"):
+            meal_p = sum(item["food_items"]["protein_per_100g"] * item["amount_grams"] / 100.0 for item in meal_items)
+            meal_c = sum(item["food_items"]["carbs_per_100g"] * item["amount_grams"] / 100.0 for item in meal_items)
+            meal_f = sum(item["food_items"]["fat_per_100g"] * item["amount_grams"] / 100.0 for item in meal_items)
+
+            with st.expander(f"🍽️ {meal_name} (קלוריות: {round(meal_cals, 1)} | חלבון: {round(meal_p, 1)}g | פחמימות: {round(meal_c, 1)}g | שומן: {round(meal_f, 1)}g) — לחץ לפתיחה"):
                 if meal_items:
+                    # סיכום קטן בתוך הארוחה
+                    st.markdown(f"**סיכום ארוחה:** 🔥 {round(meal_cals, 1)} קלוריות | 🥩 חלבון: {round(meal_p, 1)}g | 🍞 פחמימות: {round(meal_c, 1)}g | 🥑 שומן: {round(meal_f, 1)}g")
+                    st.divider()
+
                     for e in meal_items:
                         food_item = e["food_items"]
+                        amt = e["amount_grams"]
                         
+                        # חישוב הערכים עבור הפריט הספציפי
+                        item_cal = food_item['calories_per_100g'] * amt / 100.0
+                        item_p = food_item['protein_per_100g'] * amt / 100.0
+                        item_c = food_item['carbs_per_100g'] * amt / 100.0
+                        item_f = food_item['fat_per_100g'] * amt / 100.0
+
+                        # זיהוי יחידת מידה להצגה נוחה
+                        if amt == 250.0 and ("משקה חלבון" in food_item['name'] or "תנובה" in food_item['name'] or "יטבתה" in food_item['name'] or "שטראוס" in food_item['name']):
+                            display_amt = "1 בקבוק (250 מ\"ל)"
+                        elif amt == 112.0 and "טונה" in food_item['name']:
+                            display_amt = "1 קופסת טונה"
+                        elif amt % 15.0 == 0 and amt <= 150.0:
+                            display_amt = f"{int(amt / 15.0)} כפות"
+                        elif amt == 50.0 and "ביצה" in food_item['name']:
+                            display_amt = "1 ביצה"
+                        else:
+                            display_amt = f"{amt} גרם"
+
                         edit_key_state = f"editing_{e['id']}"
                         if edit_key_state not in st.session_state:
                             st.session_state[edit_key_state] = False
 
                         c_food, c_amt, c_edit, c_del = st.columns([3, 2, 1, 1])
-                        c_food.write(f"• {food_item['name']}")
-                        c_amt.write(f"{e['amount_grams']} גרם")
+                        c_food.markdown(f"**• {food_item['name']}**<br><span style='font-size: 0.85em; opacity: 0.8;'>🔥 {round(item_cal, 1)} קלוריות | 🥩 חלבון: {round(item_p, 1)}g | 🍞 פחמימות: {round(item_c, 1)}g | 🥑 שומן: {round(item_f, 1)}g</span>", unsafe_allow_html=True)
+                        c_amt.write(display_amt)
                         
                         if c_edit.button("✏️", key=f"edit_btn_{e['id']}"):
                             st.session_state[edit_key_state] = not st.session_state[edit_key_state]
@@ -758,6 +784,7 @@ with tab_log:
                                     st.session_state[edit_key_state] = False
                                     st.success("הפרטים עודכנו בהצלחה!")
                                     st.rerun()
+                        st.divider()
                 else:
                     st.info("אין מאכלים בארוחה זו.")
     else:
