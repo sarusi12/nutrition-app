@@ -664,6 +664,13 @@ if not profile_data:
             
             today_str = date.today().strftime("%Y-%m-%d")
             supabase.table("daily_goals").upsert({"user_id": user_id, "date": today_str, "target_calories": round(target_cal), "target_protein": round(target_p), "target_carbs": round(target_c), "target_fat": round(target_f)}).execute()
+            
+            # שמירה ראשונית גם בטבלת מעקב משקל
+            try:
+                supabase.table("weight_logs").insert({"user_id": user_id, "date": today_str, "weight": float(weight)}).execute()
+            except Exception:
+                pass
+                
             st.rerun()
     st.stop()
 
@@ -866,9 +873,56 @@ with tab_workouts:
     else:
         st.info("אין אימונים מתועדים לתאריך זה.")
 
-# --- מסך היסטוריה ויומן חדש ---
+# --- מסך היסטוריה ויומן חדש (כולל גרף מעקב משקל מתקדם) ---
 with tab_history:
-    st.subheader("📅 יומן היסטוריה ובדיקת עמידה ביעדים לפי תאריך")
+    st.subheader("📅 יומן היסטוריה, בדיקת עמידה ביעדים ומעקב משקל")
+    
+    # --- אזור מעקב וגרף משקל ---
+    with st.expander("📈 גרף התקדמות ומעקב משקל אישי", expanded=True):
+        col_w1, col_w2 = st.columns([2, 1])
+        with col_w1:
+            st.write("עדכן את משקלך הנוכחי כדי לעקוב אחר ההתקדמות שלך לאורך זמן:")
+        with col_w2:
+            current_logged_weight = float(profile_data.get("weight", 75.0))
+            new_weight_input = st.number_input("משקל נוכחי (ק\"ג):", min_value=30.0, max_value=250.0, value=current_logged_weight, step=0.1, key="weight_tracker_input")
+            weight_date_input = st.date_input("תאריך המדידה:", date.today(), key="weight_tracker_date")
+            
+            if st.button("💾 שמור מדידת משקל"):
+                w_date_str = weight_date_input.strftime("%Y-%m-%d")
+                try:
+                    # ניסיון לשמור בטבלת מעקב ייעודית
+                    supabase.table("weight_logs").upsert({"user_id": user_id, "date": w_date_str, "weight": float(new_weight_input)}).execute()
+                except Exception:
+                    pass
+                # עדכון גם בפרופיל הראשי
+                supabase.table("user_profiles").update({"weight": float(new_weight_input)}).eq("user_id", user_id).execute()
+                st.success(f"✅ המשקל {new_weight_input} ק\"ג נשמר בהצלחה!")
+                st.rerun()
+
+        # שליפת היסטוריית המשקלים מהדאטה-בייס
+        try:
+            weight_res = supabase.table("weight_logs").select("*").eq("user_id", user_id).order("date", desc=False).execute()
+            weight_data = weight_res.data
+        except Exception:
+            weight_data = []
+
+        if weight_data and len(weight_data) > 0:
+            import pandas as pd
+            df_weight = pd.DataFrame(weight_data)
+            if "date" in df_weight.columns and "weight" in df_weight.columns:
+                df_weight["date"] = pd.to_datetime(df_weight["date"])
+                df_weight = df_weight.sort_values("date")
+                df_weight.set_index("date", inplace=True)
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.line_chart(df_weight["weight"], use_container_width=True)
+                st.caption("📈 גרף מעקב משקל לאורך זמן (בק\"ג)")
+        else:
+            # אם אין עדיין טבלת היסטוריה מפורשת, נציג נתון נוכחי או נבקש להזין
+            st.info("💡 ברגע שתשמור מספר מדידות משקל, יוצג כאן גרף התקדמות ויזואלי מפורט.")
+
+    st.divider()
+
     history_date = st.date_input("בחר תאריך לבדיקה:", date.today(), key="history_calendar_picker")
     history_date_str = history_date.strftime("%Y-%m-%d")
 
