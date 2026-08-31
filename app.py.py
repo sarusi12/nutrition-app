@@ -215,6 +215,25 @@ st.markdown(
         border-color: {widget_border} !important;
     }}
 
+    /* selectbox (למשל "בחר שפה") ו-date_input בנויים ע"י Streamlit עם כמה
+       שכבות div מקוננות, וחלקן מקבלות רקע בהיר ישירות (לא רק דרך העטיפה
+       החיצונית) -> נשאר "קופסה לבנה" מלאה עם טקסט בלתי נראה. מכסים את כל
+       השכבות הפנימיות בכפייה, כולל צבע האייקונים (svg). */
+    [data-testid="stSelectbox"] div[data-baseweb="select"],
+    [data-testid="stSelectbox"] div[data-baseweb="select"] > div,
+    [data-testid="stSelectbox"] div[data-baseweb="select"] div,
+    [data-testid="stDateInput"] input,
+    [data-testid="stDateInput"] div[data-baseweb="input"],
+    [data-testid="stDateInput"] div[data-baseweb="input"] div {{
+        background-color: {widget_bg} !important;
+        color: {text_color} !important;
+        border-color: {widget_border} !important;
+    }}
+    [data-testid="stSelectbox"] svg,
+    [data-testid="stDateInput"] svg {{
+        fill: {text_color} !important;
+    }}
+
     /* כפתורים רגילים (form_submit_button, logout, add וכו') מגיעים
        כברירת מחדל עם רקע לבן של Streamlit; כפינו עליהם טקסט לבן שנעלם.
        נותנים להם רקע וגבול שתואמים לתמה, עם טקסט קריא. הכפתורים המיוחדים
