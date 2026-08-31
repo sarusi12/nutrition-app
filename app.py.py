@@ -178,7 +178,7 @@ is_rtl = "Hebrew" in selected_lang or "עברית" in selected_lang
 dir_val = "rtl" if is_rtl else "ltr"
 text_align_val = "right" if is_rtl else "left"
 
-# --- Ultimate Calendar, Input & Dark Mode CSS Fixes ---
+# --- Ultimate Global Dropdown, Calendar, Input & Dark Mode CSS Fixes ---
 st.markdown(
     f"""
     <style>
@@ -204,18 +204,33 @@ st.markdown(
         border-color: {widget_border} !important;
     }}
 
-    /* תיקון מלא ומוחלט לפופאפ של לוח השנה והתאריכים בכל המערכת */
+    /* תיקון גורף לכל פופאפ, לוח שנה, תפריט נפתח (Selectbox Dropdown) ושכבות תפריט */
     div[data-baseweb="popover"], div[data-baseweb="calendar"], div[data-baseweb="menu"], 
-    div[role="dialog"], div[role="application"] {{
+    div[role="dialog"], div[role="application"], ul[data-baseweb="menu"], div[role="listbox"] {{
         background-color: {input_bg_color} !important;
         color: {input_text_color} !important;
         border: 1px solid {widget_border} !important;
         border-radius: 14px !important;
     }}
 
-    div[data-baseweb="calendar"] *, div[role="dialog"] *, div[role="application"] * {{
+    /* הבטחה שכל הטקסטים והאלמנטים בתוך הפופאפים והתפריטים הנפתחים יהיו לבנים וקריאים */
+    div[data-baseweb="popover"] *, div[data-baseweb="calendar"] *, div[data-baseweb="menu"] *, 
+    div[role="dialog"] *, div[role="application"] *, ul[data-baseweb="menu"] *, div[role="listbox"] * {{
         color: {input_text_color} !important;
         background-color: transparent !important;
+    }}
+
+    /* פריטי תפריט נפתח (Options) בריחוף או רגילים */
+    ul[data-baseweb="menu"] li, li[role="option"], div[role="option"] {{
+        color: {input_text_color} !important;
+        background-color: {input_bg_color} !important;
+        border-radius: 8px !important;
+        margin: 2px 4px !important;
+    }}
+    
+    ul[data-baseweb="menu"] li:hover, li[role="option"]:hover, div[role="option"]:hover, li[aria-selected="true"] {{
+        background-color: rgba(0, 122, 255, 0.35) !important;
+        color: #ffffff !important;
     }}
 
     div[data-baseweb="calendar"] button, div[role="dialog"] button {{
@@ -283,16 +298,6 @@ st.markdown(
     div.stButton > button:active, div.stButton > button:focus, div[data-testid="stFormSubmitButton"] > button:active {{
         background-color: rgba(0, 122, 255, 0.5) !important;
         color: #ffffff !important;
-    }}
-
-    /* תפריטי בחירה נפתחים במצב לילה */
-    ul[data-baseweb="menu"] li, li[role="option"] {{
-        color: {input_text_color} !important;
-        background-color: {input_bg_color} !important;
-    }}
-    ul[data-baseweb="menu"] li:hover, li[role="option"]:hover, li[aria-selected="true"] {{
-        background-color: rgba(0, 122, 255, 0.2) !important;
-        color: {input_text_color} !important;
     }}
 
     .ios-widget {{
