@@ -178,7 +178,7 @@ is_rtl = "Hebrew" in selected_lang or "עברית" in selected_lang
 dir_val = "rtl" if is_rtl else "ltr"
 text_align_val = "right" if is_rtl else "left"
 
-# --- Ultimate Global Dropdown, Calendar, Date Input & Dark Mode CSS Fixes ---
+# --- Ultimate Global Dropdown, Calendar, Date Input & Dark Mode CSS Fixes (All Tabs) ---
 st.markdown(
     f"""
     <style>
@@ -196,7 +196,7 @@ st.markdown(
         color: {text_color} !important;
     }}
 
-    /* תיקון מוחלט לכל תיבות הטקסט, הבחירה, תאריכים ומספרים */
+    /* תיקון מוחלט לכל תיבות הטקסט, הבחירה, תאריכים ומספרים בכל הלשוניות */
     input, textarea, select, div[data-baseweb="select"] > div, div[data-baseweb="input"] > div,
     div[data-baseweb="base-input"] > div, div[data-baseweb="datepicker"] > div {{
         background-color: {input_bg_color} !important;
@@ -205,13 +205,15 @@ st.markdown(
         border-color: {widget_border} !important;
     }}
 
-    /* תיקון ישיר וממוקד לתיבת בחירת התאריך (Date Input) בכל מצב לילה */
-    div[data-baseweb="datepicker"], div[data-baseweb="input"], .stDateInput, div[aria-label*="בחר תאריך"], div[aria-label*="Date"] {{
+    /* תיקון ישיר וממוקד לתיבות בחירת תאריך, העלאת קבצים ושדות טקסט בכל הלשוניות */
+    div[data-baseweb="datepicker"], div[data-baseweb="input"], .stDateInput, div[aria-label*="בחר תאריך"], div[aria-label*="Date"],
+    div[data-testid="stFileUploader"], section[data-testid="stFileUploaderDropzone"] {{
         background-color: {input_bg_color} !important;
         color: {input_text_color} !important;
+        border-color: {widget_border} !important;
     }}
 
-    input[type="date"], input[type="text"], .stDateInput input, div[data-baseweb="datepicker"] input {{
+    input[type="date"], input[type="text"], input[type="number"], .stDateInput input, div[data-baseweb="datepicker"] input {{
         background-color: {input_bg_color} !important;
         color: {input_text_color} !important;
         -webkit-text-fill-color: {input_text_color} !important;
@@ -279,7 +281,7 @@ st.markdown(
         direction: {dir_val} !important;
     }}
 
-    /* תיקון מלא ללשוניות הארוחות (Expanders) במצב לילה */
+    /* תיקון מלא ללשוניות הארוחות וגרפים (Expanders) במצב לילה */
     div[data-testid="stExpander"], details[data-testid="stExpander"] {{
         background-color: {input_bg_color} !important;
         border: 1px solid {widget_border} !important;
@@ -296,7 +298,7 @@ st.markdown(
         color: {text_color} !important;
     }}
 
-    /* עיצוב מושלם לכפתורי הפעולה הראשיים ותגובה לריחוף/לחיצה (כולל כפתור שמור בהגדרות) */
+    /* עיצוב מושלם לכפתורי הפעולה הראשיים ותגובה לריחוף/לחיצה */
     div.stButton > button, div[data-testid="stFormSubmitButton"] > button {{
         background-color: rgba(0, 122, 255, 0.15) !important;
         color: {text_color} !important;
