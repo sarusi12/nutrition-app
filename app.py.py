@@ -168,7 +168,7 @@ text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
 widget_border = "rgba(255, 255, 255, 0.1)" if is_dark else "rgba(0, 0, 0, 0.08)"
 
-# --- Clean CSS Styling (מתוקן במיוחד למניעת התנגשות טקסט בספארי ומובייל) ---
+# --- Clean CSS Styling (מתוקן במיוחד לספארי ומובייל) ---
 st.markdown(
     f"""
     <style>
@@ -206,7 +206,7 @@ st.markdown(
     }}
 
     .ios-widget h2 {{
-        font-size: 1.7em !important;
+        font-size: 1.6em !important;
         margin: 4px 0 6px 0 !important;
         line-height: 1.2;
         font-weight: 700;
@@ -257,7 +257,6 @@ st.markdown(
         text-align: right !important;
     }}
 
-    /* התאמות מובייל קריטיות לספארי ואייפון */
     @media screen and (max-width: 768px) {{
         .row-widget.stHorizontal {{
             flex-direction: column !important;
@@ -715,8 +714,23 @@ with tab_workouts:
         w_type = st.selectbox(t["workout_type"], ["פאדל (Padel)", "חדר כושר / משקולות", "ריצה / אירובי", "כדורגל / ספורט קבוצתי", "אופניים", "שחייה", "אחר"])
         w_duration = st.number_input(t["workout_duration"], min_value=5, max_value=300, value=60, step=5)
         
-        burn_multiplier = 6.3 if "משקולות" in w_type else (11.0 if "ריצה" in w_type else (9.0 if "פאדל" in w_type else 8.0))
-        calc_active = int(w_duration * burn_multiplier)
+        # חישוב חכם המשתנה באופן אוטומטי לפי סוג האימון הנבחר
+        if "משקולות" in w_type:
+            burn_rate_active = 6.3   # אימון משקולות (הפסקות בין סט לסט, קצב שריפה ממוקד)
+        elif "פאדל" in w_type:
+            burn_rate_active = 8.5   # פאדל (תנועה דינמית מתמשכת, ריצות קצרות והפסקות קצרות)
+        elif "ריצה" in w_type:
+            burn_rate_active = 11.2  # ריצה / אירובי (דופק גבוה ורציף)
+        elif "כדורגל" in w_type:
+            burn_rate_active = 10.0  # ספורט קבוצתי אינטנסיבי
+        elif "אופניים" in w_type:
+            burn_rate_active = 8.8   # רכיבת אופניים
+        elif "שחייה" in w_type:
+            burn_rate_active = 9.5   # שחייה
+        else:
+            burn_rate_active = 7.5   # אחר
+
+        calc_active = int(w_duration * burn_rate_active)
         calc_total = int(calc_active * 1.35)
 
         c_inp1, c_inp2 = st.columns(2)
