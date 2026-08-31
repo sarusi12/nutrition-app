@@ -209,15 +209,12 @@ supabase = init_supabase()
 
 # --- מאגר מובנה ענק ומקיף (כולל משקאות חלבון ואבקות חלבון מהסופר) ---
 LOCAL_DATABASE = {
-    # משקאות חלבון ואבקות מהסופר / בית
-    "משקה חלבון יטבתה PRO": {"cal": 52.0, "p": 8.3, "c": 3.8, "f": 0.5}, # מחושב לפי 100 מ"ל (בקבוק 250 מ"ל = כ-130 קלוריות, 20g חלבון)
+    "משקה חלבון יטבתה PRO": {"cal": 52.0, "p": 8.3, "c": 3.8, "f": 0.5},
     "משקה חלבון תנובה GO": {"cal": 50.0, "p": 8.0, "c": 4.0, "f": 0.4},
     "משקה חלבון שטראוס": {"cal": 50.0, "p": 8.0, "c": 4.0, "f": 0.5},
     "מעדן מילקי פרו": {"cal": 85.0, "p": 10.0, "c": 8.0, "f": 1.5},
     "יוגורט חלבון 20g": {"cal": 60.0, "p": 10.0, "c": 4.0, "f": 0.4},
-    "אבקת חלבון (סקופ סטנדרטי)": {"cal": 400.0, "p": 80.0, "c": 6.0, "f": 3.0}, # ערך ל-100 גרם אבקה
-    
-    # שאר המאגר
+    "אבקת חלבון (סקופ סטנדרטי)": {"cal": 400.0, "p": 80.0, "c": 6.0, "f": 3.0},
     "חזה עוף": {"cal": 165.0, "p": 31.0, "c": 0.0, "f": 3.6},
     "חזה עוף מבושל": {"cal": 165.0, "p": 31.0, "c": 0.0, "f": 3.6},
     "שניצל עוף": {"cal": 230.0, "p": 18.0, "c": 14.0, "f": 11.0},
@@ -479,7 +476,7 @@ with tab_auto_add:
         amount_input = raw_amount * 5.0
     elif chosen_unit == "בקבוק / יחידה":
         if "משקה חלבון" in active_search_name or "תנובה" in active_search_name or "יטבתה" in active_search_name:
-            amount_input = raw_amount * 250.0 # בקבוק משקה חלבון סטנדרטי הוא 250 מ"ל
+            amount_input = raw_amount * 250.0
         elif "טונה" in active_search_name:
             amount_input = raw_amount * 112.0
         elif "קוטג'" in active_search_name or "גבינה" in active_search_name:
@@ -487,7 +484,7 @@ with tab_auto_add:
         else:
             amount_input = raw_amount * 100.0
     elif chosen_unit == "סקופ":
-        amount_input = raw_amount * 30.0 # סקופ אבקת חלבון סטנדרטי שוקל כ-30 גרם
+        amount_input = raw_amount * 30.0
     elif chosen_unit == "יחידות":
         if "ביצה" in active_search_name:
             amount_input = raw_amount * 50.0
@@ -737,10 +734,11 @@ with tab_settings:
                 else:
                     st.error("Password must be at least 6 characters.")
             
-            :
-            try:
-                supabase.auth.update_user(update_attrs)
-                st.success("Account updated successfully!")
-            except Exception as e:
-                st.error(f"Error updating account: {e}")
-                
+            if update_attrs:
+                try:
+                    supabase.auth.update_user(update_attrs)
+                    st.success("Account updated successfully!")
+                except Exception as e:
+                    st.error(f"Error updating account: {e}")
+            else:
+                st.info("No changes made.")
