@@ -5,7 +5,7 @@ from datetime import date, datetime
 from supabase import create_client, Client
 
 # --- Streamlit Page Config ---
-st.set_page_config(page_title="NutriFlow / מחשבון תזונה", layout="wide")
+st.set_page_config(page_title="NutriFlow / מחשבון תזונה", layout="wide", initial_sidebar_state="expanded")
 
 # --- Language Dictionaries (i18n) ---
 TRANSLATIONS = {
@@ -132,9 +132,8 @@ direction = t["dir"]
 if "theme_mode" not in st.session_state:
     st.session_state["theme_mode"] = "אוטומטי (לפי השעה/מערכת)"
 
-# Determine if it's currently dark or light based on time/setting
 current_hour = datetime.now().hour
-is_automatic_dark = (current_hour < 6 or current_hour >= 19) # Dark between 19:00 and 06:00
+is_automatic_dark = (current_hour < 6 or current_hour >= 19)
 
 mode = st.session_state["theme_mode"]
 if "כהה" in mode or "Dark" in mode:
@@ -144,7 +143,6 @@ elif "בהיר" in mode or "Light" in mode:
 else:
     is_dark = is_automatic_dark
 
-# iOS 27 Inspired Glassmorphism with Dynamic Colors (Dark vs Light)
 bg_color = "#0e1117" if is_dark else "#f8f9fa"
 text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
@@ -366,7 +364,7 @@ tab_log, tab_auto_add, tab_camera, tab_ai, tab_settings = st.tabs([t["tab_log"],
 
 with tab_auto_add:
     st.subheader(t["search_food"])
-    search_q = st.text_input(t["search_food"])
+    search_q = st.text_input(t["search_food"], key="search_input_field")
     amount_input = st.number_input(t["amount_grams"], min_value=1.0, value=100.0, step=10.0)
     meal_type_sel = st.selectbox(t["meal_type"], [t["breakfast"], t["lunch"], t["dinner"], t["snack"]])
 
@@ -412,7 +410,6 @@ with tab_log:
     st.divider()
     st.subheader(t["daily_summary"])
     
-    # iOS Style Widgets Dashboard
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.markdown(f"""
@@ -474,7 +471,6 @@ with tab_settings:
         s_height = st.number_input(t["height"], min_value=100.0, max_value=230.0, value=float(profile_data.get("height", 175.0)))
         s_weight = st.number_input(t["weight"], min_value=30.0, max_value=250.0, value=float(profile_data.get("weight", 75.0)))
         
-        # Theme Selector Setting
         theme_choice = st.selectbox(t["theme_label"], t["theme_options"], index=t["theme_options"].index(st.session_state["theme_mode"]) if st.session_state["theme_mode"] in t["theme_options"] else 0)
         
         submit_settings = st.form_submit_button(t["save_settings"])
@@ -486,3 +482,29 @@ with tab_settings:
             }).eq("user_id", user_id).execute()
             st.success("Updated successfully!")
             st.rerun()
+
+    st.divider()
+    st.markdown(t["account_update"])
+    with st.form("account_update_form"):
+        new_email = st.text_input(t["new_email"], value=st.session_state["user"].email)
+        new_password = st.text_input(t["new_password"], type="password")
+        submit_account = st.form_submit_button(t["update_account"])
+        
+        if submit_account:
+            update_attrs = {}
+            if new_email and new_email != st.session_state["user"].email:
+                update_attrs["email"] = new_email.strip()
+            if new_password:
+                if len(new_password) >= 6:
+                    update_attrs["password"] = new_password
+                else:
+                    st.error("Password must be at least 6 characters.")
+            
+            if update_attrs:
+                try:
+                    supabase.auth.update_user(update_attrs)
+                    st.success("Account updated successfully!")
+                except Exception as e:
+                    st.error(f"Error updating account: {e}")
+            else:
+                st.info("No changes made.")
