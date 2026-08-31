@@ -33,7 +33,7 @@ TRANSLATIONS = {
         "goal": "מה המטרה שלך?",
         "calc_goals": "חשב יעדים ושמור",
         "logout": "התנתק",
-        "connected_as": "מחובר ك:",
+        "connected_as": "מחובר כ:",
         "date_header": "📅 תאריך ויעדים",
         "tab_log": "📝 יומן אכילה",
         "tab_search": "🔍 חיפוש והוספה",
@@ -209,7 +209,6 @@ supabase = init_supabase()
 
 # --- מאגר מובנה ענק ומקיף ---
 LOCAL_DATABASE = {
-    # --- חלבונים (בשר, עופות, דגים) ---
     "חזה עוף": {"cal": 165.0, "p": 31.0, "c": 0.0, "f": 3.6},
     "חזה עוף מבושל": {"cal": 165.0, "p": 31.0, "c": 0.0, "f": 3.6},
     "שניצל עוף": {"cal": 230.0, "p": 18.0, "c": 14.0, "f": 11.0},
@@ -227,8 +226,6 @@ LOCAL_DATABASE = {
     "מושט / אמנון": {"cal": 96.0, "p": 20.0, "c": 0.0, "f": 1.7},
     "בקלה": {"cal": 82.0, "p": 18.0, "c": 0.0, "f": 0.7},
     "שרימפס": {"cal": 99.0, "p": 24.0, "c": 0.2, "f": 0.3},
-
-    # --- ביצים ומוצרי חלב ---
     "ביצה": {"cal": 155.0, "p": 12.6, "c": 1.1, "f": 10.6},
     "חלבון ביצה (לבן)": {"cal": 52.0, "p": 10.9, "c": 0.7, "f": 0.2},
     "קוטג' 5%": {"cal": 95.0, "p": 11.0, "c": 1.5, "f": 5.0},
@@ -241,8 +238,6 @@ LOCAL_DATABASE = {
     "יוגורט חלבון 20g": {"cal": 70.0, "p": 10.0, "c": 4.0, "f": 0.4},
     "חלב 3%": {"cal": 60.0, "p": 3.3, "c": 4.7, "f": 3.0},
     "חלב 1%": {"cal": 42.0, "p": 3.4, "c": 4.8, "f": 1.0},
-
-    # --- פחמימות ודגנים ---
     "אורז לבן מבושל": {"cal": 130.0, "p": 2.7, "c": 28.0, "f": 0.3},
     "אורז מלא מבושל": {"cal": 111.0, "p": 2.6, "c": 23.0, "f": 0.9},
     "פסטה מבושלת": {"cal": 131.0, "p": 5.0, "c": 25.0, "f": 1.1},
@@ -259,8 +254,6 @@ LOCAL_DATABASE = {
     "פיתה": {"cal": 275.0, "p": 8.5, "c": 55.0, "f": 1.2},
     "אורז בסמטי מבושל": {"cal": 130.0, "p": 2.8, "c": 28.0, "f": 0.2},
     "קוסקוס מבושל": {"cal": 112.0, "p": 3.8, "c": 23.2, "f": 0.2},
-
-    # --- ירקות ---
     "שעועית ירוקה": {"cal": 31.0, "p": 1.8, "c": 7.0, "f": 0.1},
     "שעועית ירוקה מבושלת": {"cal": 35.0, "p": 1.9, "c": 7.9, "f": 0.2},
     "ברוקולי": {"cal": 34.0, "p": 2.8, "c": 6.6, "f": 0.4},
@@ -279,8 +272,6 @@ LOCAL_DATABASE = {
     "תירס מבושל": {"cal": 96.0, "p": 3.4, "c": 21.0, "f": 1.5},
     "פטריות": {"cal": 22.0, "p": 3.1, "c": 3.3, "f": 0.3},
     "סלק מבושל": {"cal": 44.0, "p": 1.7, "c": 9.6, "f": 0.2},
-
-    # --- פירות ---
     "בננה": {"cal": 89.0, "p": 1.1, "c": 22.8, "f": 0.3},
     "תפוח": {"cal": 52.0, "p": 0.3, "c": 13.8, "f": 0.2},
     "תפוז": {"cal": 47.0, "p": 0.9, "c": 11.8, "f": 0.1},
@@ -290,8 +281,6 @@ LOCAL_DATABASE = {
     "מלון": {"cal": 34.0, "p": 0.8, "c": 8.2, "f": 0.2},
     "תות שדה": {"cal": 32.0, "p": 0.7, "c": 7.7, "f": 0.3},
     "תמר (יבש)": {"cal": 282.0, "p": 2.5, "c": 75.0, "f": 0.4},
-
-    # --- שומנים וחטיפים ---
     "שמן זית": {"cal": 884.0, "p": 0.0, "c": 0.0, "f": 100.0},
     "חמאה": {"cal": 717.0, "p": 0.9, "c": 0.1, "f": 81.0},
     "אבוקדו": {"cal": 160.0, "p": 2.0, "c": 8.5, "f": 14.7},
@@ -536,7 +525,7 @@ with tab_camera:
             st.success("הארוחה נוספה!")
             st.rerun()
 
-# --- מסך יומן אכילה ראשי נקי עם תיבות מתקפלות ---
+# --- מסך יומן אכילה ראשי נקי עם ווידג'טים אינטראקטיביים ---
 with tab_log:
     st.subheader(f"תיעוד ארוחות לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
@@ -587,6 +576,34 @@ with tab_log:
         </div>
         """, unsafe_allow_html=True)
 
+    # --- פירוט אינטראקטיבי (הצד האחורי של הווידג'טים - פירוט מאכלים לפי אבות מזון) ---
+    if entries:
+        with st.expander("🔍 לחץ כאן להצגת פירוט המאכלים שתרמו לכל רכיב תזונתי היום"):
+            p_tab, c_tab, f_tab, cal_tab = st.tabs(["🥩 פירוט חלבונים", "🍞 פירוט פחמימות", "🥑 פירוט שומנים", "🔥 פירוט קלוריות"])
+            
+            with p_tab:
+                for e in entries:
+                    p_val = e["food_items"]["protein_per_100g"] * e["amount_grams"] / 100.0
+                    if p_val > 0:
+                        st.write(f"• **{e['food_items']['name']}** ({e['amount_grams']} גרם): **+{round(p_val, 1)}g** חלבון (מתוך ארוחת *{e['meal_type']}*)")
+            
+            with c_tab:
+                for e in entries:
+                    c_val = e["food_items"]["carbs_per_100g"] * e["amount_grams"] / 100.0
+                    if c_val > 0:
+                        st.write(f"• **{e['food_items']['name']}** ({e['amount_grams']} גרם): **+{round(c_val, 1)}g** פחמימה (מתוך ארוחת *{e['meal_type']}*)")
+                        
+            with f_tab:
+                for e in entries:
+                    f_val = e["food_items"]["fat_per_100g"] * e["amount_grams"] / 100.0
+                    if f_val > 0:
+                        st.write(f"• **{e['food_items']['name']}** ({e['amount_grams']} גרם): **+{round(f_val, 1)}g** שומן (מתוך ארוחת *{e['meal_type']}*)")
+
+            with cal_tab:
+                for e in entries:
+                    cal_val = e["food_items"]["calories_per_100g"] * e["amount_grams"] / 100.0
+                    st.write(f"• **{e['food_items']['name']}** ({e['amount_grams']} גרם): **+{round(cal_val, 1)}** קלוריות (מתוך ארוחת *{e['meal_type']}*)")
+
     st.divider()
     
     if entries:
@@ -611,9 +628,12 @@ with tab_log:
                 if meal_items:
                     for e in meal_items:
                         food_item = e["food_items"]
-                        c_food, c_amt = st.columns([4, 2])
+                        c_food, c_amt, c_del = st.columns([4, 2, 1])
                         c_food.write(f"• {food_item['name']}")
                         c_amt.write(f"{e['amount_grams']} גרם")
+                        if c_del.button("🗑️", key=f"del_exp_{e['id']}"):
+                            supabase.table("food_log").delete().eq("id", e["id"]).execute()
+                            st.rerun()
                 else:
                     st.info("אין מאכלים בארוחה זו.")
     else:
@@ -668,4 +688,4 @@ with tab_settings:
                 except Exception as e:
                     st.error(f"Error updating account: {e}")
             else:
-                st.info("No changes made.")
+                    st.info("No changes made.")
