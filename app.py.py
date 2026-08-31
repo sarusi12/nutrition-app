@@ -167,7 +167,7 @@ text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
 widget_border = "rgba(255, 255, 255, 0.1)" if is_dark else "rgba(0, 0, 0, 0.08)"
 
-# --- Clean CSS Styling (פתרון מקצועי: הסתרה מוחלטת של סרגל הצד במצב סגור) ---
+# --- Clean CSS Styling (הסתרה מוחלטת של סרגל צד + הגדלת פונטים בווידג'טים) ---
 st.markdown(
     f"""
     <style>
@@ -180,7 +180,6 @@ st.markdown(
         -webkit-text-size-adjust: 100%;
     }}
     
-    /* מניעה מוחלטת של שבירת טקסט והצגת פס אנכי כאשר התפריט סגור */
     section[data-testid="stSidebar"][aria-expanded="false"] {{
         display: none !important;
         width: 0px !important;
@@ -197,17 +196,18 @@ st.markdown(
         direction: rtl !important;
     }}
 
+    /* ווידג'טים ראשיים מוגדלים ומרווחים */
     .ios-widget {{
         background: {widget_bg};
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border: 1px solid {widget_border};
         border-radius: 20px;
-        padding: 16px 12px;
+        padding: 20px 16px;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
-        margin-bottom: 12px;
+        margin-bottom: 14px;
         text-align: center;
-        min-height: 125px;
+        min-height: 140px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -216,23 +216,23 @@ st.markdown(
     }}
 
     .ios-widget h4 {{
-        font-size: 0.95em;
-        margin: 0 0 6px 0 !important;
+        font-size: 1.15em !important;
+        margin: 0 0 8px 0 !important;
         font-weight: 600;
     }}
 
     .ios-widget h2 {{
-        font-size: 1.6em !important;
-        margin: 4px 0 6px 0 !important;
+        font-size: 2.1em !important;
+        margin: 6px 0 8px 0 !important;
         line-height: 1.2;
         font-weight: 700;
     }}
 
     .ios-widget p {{
-        font-size: 0.8em !important;
+        font-size: 0.95em !important;
         margin: 0 !important;
-        opacity: 0.85;
-        line-height: 1.3;
+        opacity: 0.9;
+        line-height: 1.4;
     }}
 
     .meal-summary-widget {{
@@ -241,16 +241,16 @@ st.markdown(
         -webkit-backdrop-filter: blur(15px);
         border: 1px solid {widget_border};
         border-radius: 16px;
-        padding: 8px;
+        padding: 12px;
         text-align: center;
         margin-bottom: 10px;
     }}
     
     .stTabs [data-baseweb="tab-list"] {{
         direction: rtl;
-        gap: 4px;
+        gap: 6px;
         background-color: {widget_bg};
-        padding: 4px;
+        padding: 6px;
         border-radius: 16px;
         display: flex;
         overflow-x: auto;
@@ -258,10 +258,11 @@ st.markdown(
     }}
     .stTabs [data-baseweb="tab"] {{
         border-radius: 12px;
-        padding: 8px 12px;
+        padding: 10px 16px;
         color: {text_color};
         white-space: nowrap;
-        font-size: 0.85em;
+        font-size: 0.95em;
+        font-weight: 600;
         flex-shrink: 0;
     }}
 
@@ -271,6 +272,8 @@ st.markdown(
         border-radius: 14px !important;
         direction: rtl !important;
         text-align: right !important;
+        font-size: 1.1em !important;
+        font-weight: bold !important;
     }}
 
     @media screen and (max-width: 768px) {{
@@ -798,16 +801,16 @@ with tab_workouts:
     c_inp1, c_inp2 = st.columns(2)
     with c_inp1:
         st.markdown(f"""
-        <div class="ios-widget" style="min-height: 90px; margin-bottom: 0px;">
+        <div class="ios-widget" style="min-height: 100px; margin-bottom: 0px;">
             <h4>🔥 קלוריות פעילות</h4>
-            <h2 style="font-size: 1.4em !important;">{calc_active}</h2>
+            <h2>{calc_active}</h2>
         </div>
         """, unsafe_allow_html=True)
     with c_inp2:
         st.markdown(f"""
-        <div class="ios-widget" style="min-height: 90px; margin-bottom: 0px;">
+        <div class="ios-widget" style="min-height: 100px; margin-bottom: 0px;">
             <h4>⚡ סה''כ קלוריות (טוטאל)</h4>
-            <h2 style="font-size: 1.4em !important;">{calc_total}</h2>
+            <h2>{calc_total}</h2>
         </div>
         """, unsafe_allow_html=True)
 
@@ -851,9 +854,9 @@ with tab_workouts:
         for w in workout_entries:
             tot_cals_val = w.get('total_calories', w['calories_burned'] + int(w['duration_minutes'] * 2.2))
             c_type, c_dur, c_cals, c_del = st.columns([3, 2, 2, 1])
-            c_type.write(f"🏋️ {w['workout_type']}")
-            c_dur.write(f"⏱️ {w['duration_minutes']} דקות")
-            c_cals.write(f"🔥 פעילות: {w['calories_burned']} | טוטאל: {tot_cals_val}")
+            c_type.markdown(f"<span style='font-size: 1.1em; font-weight: 600;'>🏋️ {w['workout_type']}</span>", unsafe_allow_html=True)
+            c_dur.markdown(f"<span style='font-size: 1.05em;'>⏱️ {w['duration_minutes']} דקות</span>", unsafe_allow_html=True)
+            c_cals.markdown(f"<span style='font-size: 1.05em;'>🔥 פעילות: {w['calories_burned']} | טוטאל: {tot_cals_val}</span>", unsafe_allow_html=True)
             if c_del.button("🗑️", key=f"del_w_{w['id']}"):
                 supabase.table("workouts").delete().eq("id", w["id"]).execute()
                 st.rerun()
@@ -1060,29 +1063,29 @@ with tab_log:
                     with mc1:
                         st.markdown(f"""
                         <div class="meal-summary-widget">
-                            <span style="font-size: 0.8em; opacity: 0.8;">🔥 קלוריות</span>
-                            <div style="font-size: 1.2em; font-weight: bold;">{round(meal_cals, 1)}</div>
+                            <span style="font-size: 0.9em; opacity: 0.85;">🔥 קלוריות</span>
+                            <div style="font-size: 1.35em; font-weight: bold;">{round(meal_cals, 1)}</div>
                         </div>
                         """, unsafe_allow_html=True)
                     with mc2:
                         st.markdown(f"""
                         <div class="meal-summary-widget">
-                            <span style="font-size: 0.8em; opacity: 0.8;">🥩 חלבון</span>
-                            <div style="font-size: 1.2em; font-weight: bold;">{round(meal_p, 1)}g</div>
+                            <span style="font-size: 0.9em; opacity: 0.85;">🥩 חלבון</span>
+                            <div style="font-size: 1.35em; font-weight: bold;">{round(meal_p, 1)}g</div>
                         </div>
                         """, unsafe_allow_html=True)
                     with mc3:
                         st.markdown(f"""
                         <div class="meal-summary-widget">
-                            <span style="font-size: 0.8em; opacity: 0.8;">🍞 פחמימות</span>
-                            <div style="font-size: 1.2em; font-weight: bold;">{round(meal_c, 1)}g</div>
+                            <span style="font-size: 0.9em; opacity: 0.85;">🍞 פחמימות</span>
+                            <div style="font-size: 1.35em; font-weight: bold;">{round(meal_c, 1)}g</div>
                         </div>
                         """, unsafe_allow_html=True)
                     with mc4:
                         st.markdown(f"""
                         <div class="meal-summary-widget">
-                            <span style="font-size: 0.8em; opacity: 0.8;">🥑 שומן</span>
-                            <div style="font-size: 1.2em; font-weight: bold;">{round(meal_f, 1)}g</div>
+                            <span style="font-size: 0.9em; opacity: 0.85;">🥑 שומן</span>
+                            <div style="font-size: 1.35em; font-weight: bold;">{round(meal_f, 1)}g</div>
                         </div>
                         """, unsafe_allow_html=True)
 
@@ -1137,8 +1140,8 @@ with tab_log:
                             st.session_state[edit_key_state] = False
 
                         c_food, c_amt, c_edit, c_del = st.columns([3, 2, 1, 1])
-                        c_food.markdown(f"**• {food_item['name']}**<br><span style='font-size: 0.85em; opacity: 0.8;'>🔥 {round(item_cal, 1)} קל | 🥩 חלבון: {round(item_p, 1)}g | 🍞 פחמימות: {round(item_c, 1)}g | 🥑 שומן: {round(item_f, 1)}g</span>", unsafe_allow_html=True)
-                        c_amt.write(display_amt)
+                        c_food.markdown(f"<span style='font-size: 1.1em; font-weight: 600;'>• {food_item['name']}</span><br><span style='font-size: 0.95em; opacity: 0.85;'>🔥 {round(item_cal, 1)} קל | 🥩 חלבון: {round(item_p, 1)}g | 🍞 פחמימות: {round(item_c, 1)}g | 🥑 שומן: {round(item_f, 1)}g</span>", unsafe_allow_html=True)
+                        c_amt.markdown(f"<span style='font-size: 1.05em; font-weight: 500;'>{display_amt}</span>", unsafe_allow_html=True)
                         
                         if c_edit.button("✏️", key=f"edit_btn_{e['id']}"):
                             st.session_state[edit_key_state] = not st.session_state[edit_key_state]
