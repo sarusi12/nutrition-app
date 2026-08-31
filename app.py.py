@@ -836,7 +836,11 @@ with tab_water:
     
     log_res_water = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
     entries_water = log_res_water.data
-    total_water_ml = sum(e["amount_grams"] for e in entries_water if any(w in e["food_items"]["name"] for w in ["מים", "בקבוק מים"]))
+    
+    # סינון מדויק המזהה אך ורק מים אמיתיים (מונע זיהוי שגוי של מאכלים כמו טחינה)
+    water_entries_only = [e for e in entries_water if e["food_items"] and any(w in e["food_items"]["name"] for w in ["מים", "בקבוק מים"]) and "טחינה" not in e["food_items"]["name"]]
+    
+    total_water_ml = sum(e["amount_grams"] for e in water_entries_only)
     water_glasses = round(total_water_ml / 250.0, 1)
 
     def add_water_to_log_tab(amount_val):
@@ -887,7 +891,6 @@ with tab_water:
 
     st.divider()
     st.subheader("📋 פירוט צריכת מים ומשקאות ליום זה")
-    water_entries_only = [e for e in entries_water if any(w in e["food_items"]["name"] for w in ["מים", "בקבוק מים"])]
     if water_entries_only:
         for we in water_entries_only:
             w_amt = we["amount_grams"]
@@ -1367,3 +1370,4 @@ with tab_settings:
                     st.error(f"Error updating account: {e}")
             else:
                 st.info("No changes made.")
+                
