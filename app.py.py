@@ -10,7 +10,7 @@ st.set_page_config(page_title="NutriFlow / מחשבון תזונה", layout="wid
 # --- Language Dictionaries (i18n) ---
 TRANSLATIONS = {
     "עברית (Hebrew)": {
-        "app_title": "🥗 מחשבון תזונה ויומן אכילה אישי",
+        "app_title": "🥗 מחשבון תזונה, אימונים ויומן אישי",
         "login_title": "🔐 התחברות למערכת התזונה",
         "email": "אימייל",
         "password": "סיסמה",
@@ -37,6 +37,7 @@ TRANSLATIONS = {
         "date_header": "📅 תאריך ויעדים",
         "tab_log": "📝 יומן אכילה",
         "tab_search": "🔍 חיפוש והוספה",
+        "tab_workouts": "💪 אימונים ושריפת קלוריות",
         "tab_camera": "📸 סריקת תמונה",
         "tab_ai": "🤖 יועץ AI",
         "tab_settings": "⚙️ הגדרות פרופיל",
@@ -53,6 +54,11 @@ TRANSLATIONS = {
         "protein": "חלבון",
         "carbs": "פחמימות",
         "fat": "שומן",
+        "workouts_header": "🏋️ תיעוד אימון חדש",
+        "workout_type": "סוג האימון",
+        "workout_duration": "משך האימון (בדקות)",
+        "calories_burned": "קלוריות שנשרפו (הערכה)",
+        "add_workout_btn": "הוסף אימון ליומן",
         "settings_header": "⚙️ הגדרות פרופיל ופרטי חשבון",
         "theme_label": "מצב תצוגה (Theme)",
         "theme_options": ["אוטומטי (לפי השעה/מערכת)", "מצב כהה (Dark)", "מצב בהיר (Light)"],
@@ -63,7 +69,7 @@ TRANSLATIONS = {
         "update_account": "עדכן פרטי התחברות"
     },
     "English": {
-        "app_title": "🥗 Nutrition Calculator & Food Log",
+        "app_title": "🥗 Nutrition, Workouts & Food Log",
         "login_title": "🔐 Login to Nutrition System",
         "email": "Email",
         "password": "Password",
@@ -90,6 +96,7 @@ TRANSLATIONS = {
         "date_header": "📅 Date & Goals",
         "tab_log": "📝 Food Log",
         "tab_search": "🔍 Search & Add",
+        "tab_workouts": "💪 Workouts & Calories",
         "tab_camera": "📸 Image Scan",
         "tab_ai": "🤖 AI Advisor",
         "tab_settings": "⚙️ Profile Settings",
@@ -106,6 +113,11 @@ TRANSLATIONS = {
         "protein": "Protein",
         "carbs": "Carbs",
         "fat": "Fat",
+        "workouts_header": "🏋️ Log New Workout",
+        "workout_type": "Workout Type",
+        "workout_duration": "Duration (minutes)",
+        "calories_burned": "Estimated Calories Burned",
+        "add_workout_btn": "Add Workout",
         "settings_header": "⚙️ Profile & Account Settings",
         "theme_label": "Display Theme",
         "theme_options": ["Automatic (Time/System based)", "Dark Mode", "Light Mode"],
@@ -356,7 +368,8 @@ selected_date = st.sidebar.date_input("בחר תאריך", date.today()).strftim
 goals_res = supabase.table("daily_goals").select("*").eq("user_id", user_id).eq("date", selected_date).execute()
 user_goals = goals_res.data[0] if goals_res.data else {"target_calories": 2200, "target_protein": 170, "target_carbs": 220, "target_fat": 60}
 
-tab_log, tab_auto_add, tab_camera, tab_ai, tab_settings = st.tabs([t["tab_log"], t["tab_search"], t["tab_camera"], t["tab_ai"], t["tab_settings"]])
+# יצירת הלשוניות כולל לשונית האימונים החדשה
+tab_log, tab_auto_add, tab_workouts, tab_camera, tab_ai, tab_settings = st.tabs([t["tab_log"], t["tab_search"], t["tab_workouts"], t["tab_camera"], t["tab_ai"], t["tab_settings"]])
 
 with tab_auto_add:
     st.subheader(t["search_food"])
@@ -378,6 +391,61 @@ with tab_auto_add:
             else:
                 st.error("לא נמצאו נתונים תזונתיים.")
 
+# --- לשונית אימונים חדשה ---
+with tab_workouts:
+    st.subheader(t["workouts_header"])
+    
+    with st.form("workout_form"):
+        w_type = st.selectbox(t["workout_type"], ["פאדל (Padel)", "חדר כושר / משקולות", "ריצה / אירובי", "כדורגל / ספורט קבוצתי", "אופניים", "שחייה", "אחר"])
+        w_duration = st.number_input(t["workout_duration"], min_value=5, max_value=300, value=60, step=5)
+        
+        # חישוב משוער חכם לקלוריות לפי סוג האימון ומשך הזמן
+        base_burn_rate = 8.0 # ברירת מחדל לדקות
+        if "משקולות" in w_type: base_burn_rate = 6.0
+        elif "ריצה" in w_type: base_burn_rate = 11.0
+        elif "פאדל" in w_type: base_burn_rate = 9.0
+        elif "אופניים" in w_type: base_burn_rate = 8.5
+        elif "שחייה" in w_type: base_burn_rate = 10.0
+        
+        default_calc_cals = int(w_duration * base_burn_rate)
+        w_calories = st.number_input(t["calories_burned"], min_value=10, max_value=3000, value=default_calc_cals, step=10)
+        
+        submit_workout = st.form_submit_button(t["add_workout_btn"])
+        
+        if submit_workout:
+            try:
+                supabase.table("workouts").insert({
+                    "user_id": user_id,
+                    "date": selected_date,
+                    "workout_type": w_type,
+                    "duration_minutes": int(w_duration),
+                    "calories_burned": int(w_calories)
+                }).execute()
+                st.success("האימון נוסף בהצלחה!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"שגיאה בהוספת האימון: {e}")
+
+    st.divider()
+    st.subheader("📋 אימונים מתועדים לתאריך הנבחר")
+    workouts_res = supabase.table("workouts").select("*").eq("user_id", user_id).eq("date", selected_date).execute()
+    workout_entries = workouts_res.data
+    
+    if workout_entries:
+        total_workout_cals = sum(w["calories_burned"] for w in workout_entries)
+        st.info(סה"כ קלוריות שנשרפו באימונים היום: **{total_workout_cals} קלוריות** 🔥")
+        
+        for w in workout_entries:
+            c_type, c_dur, c_cals, c_del = st.columns([3, 2, 2, 1])
+            c_type.write(f"🏋️ {w['workout_type']}")
+            c_dur.write(f"⏱️ {w['duration_minutes']} דקות")
+            c_cals.write(f"🔥 {w['calories_burned']} קלוריות")
+            if c_del.button("🗑️", key=f"del_w_{w['id']}"):
+                supabase.table("workouts").delete().eq("id", w["id"]).execute()
+                st.rerun()
+    else:
+        st.info("אין אימונים מתועדים לתאריך זה.")
+
 with tab_camera:
     st.subheader("📸 סריקת תמונה")
     uploaded_file = st.file_uploader("בחר תמונה", type=["jpg", "jpeg", "png"])
@@ -398,21 +466,27 @@ with tab_log:
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
     entries = log_res.data
     
+    # חישוב קלוריות ואבות גוף מהאוכל
     consumed_cal = sum(e["food_items"]["calories_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
     consumed_p = sum(e["food_items"]["protein_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
     consumed_c = sum(e["food_items"]["carbs_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
     consumed_f = sum(e["food_items"]["fat_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
+
+    # שליפת קלוריות שנשרפו באימונים עבור סיכום יומי משולב
+    workouts_res_summary = supabase.table("workouts").select("calories_burned").eq("user_id", user_id).eq("date", selected_date).execute()
+    total_burned_cals = sum(w["calories_burned"] for w in workouts_res_summary.data) if workouts_res_summary.data else 0
 
     st.divider()
     st.subheader(t["daily_summary"])
     
     col1, col2, col3, col4 = st.columns(4)
     with col1:
+        net_calories = consumed_cal - total_burned_cals
         st.markdown(f"""
         <div class="ios-widget">
             <h4>🔥 {t['calories']}</h4>
             <h2>{round(consumed_cal, 1)}</h2>
-            <p>Target: {user_goals['target_calories']}</p>
+            <p>Burned: -{total_burned_cals} | Target: {user_goals['target_calories']}</p>
         </div>
         """, unsafe_allow_html=True)
     with col2:
