@@ -178,7 +178,7 @@ is_rtl = "Hebrew" in selected_lang or "עברית" in selected_lang
 dir_val = "rtl" if is_rtl else "ltr"
 text_align_val = "right" if is_rtl else "left"
 
-# --- Ultimate Global Dropdown, Calendar, Date Input & Dark Mode CSS Fixes (All Tabs) ---
+# --- Absolute Global Dropdown, Calendar, Date Input, File Uploader & Button Hover Fixes ---
 st.markdown(
     f"""
     <style>
@@ -205,18 +205,21 @@ st.markdown(
         border-color: {widget_border} !important;
     }}
 
-    /* תיקון ישיר וממוקד לתיבות בחירת תאריך, העלאת קבצים ושדות טקסט בכל הלשוניות */
-    div[data-baseweb="datepicker"], div[data-baseweb="input"], .stDateInput, div[aria-label*="בחר תאריך"], div[aria-label*="Date"],
-    div[data-testid="stFileUploader"], section[data-testid="stFileUploaderDropzone"] {{
-        background-color: {input_bg_color} !important;
-        color: {input_text_color} !important;
-        border-color: {widget_border} !important;
-    }}
-
+    /* תיקון גורף לכל תיבות בחירת התאריך (Date Inputs) בכל הלשוניות (ראשי, היסטוריה, תמונות) */
+    div[data-baseweb="datepicker"], div[data-baseweb="input"], .stDateInput, 
+    div[aria-label*="בחר תאריך"], div[aria-label*="Date"], div[aria-label*="תאריך"],
     input[type="date"], input[type="text"], input[type="number"], .stDateInput input, div[data-baseweb="datepicker"] input {{
         background-color: {input_bg_color} !important;
         color: {input_text_color} !important;
         -webkit-text-fill-color: {input_text_color} !important;
+    }}
+
+    /* תיקון גורף לאזורי העלאת קבצים ותמונות (File Uploader) בכל הלשוניות */
+    div[data-testid="stFileUploader"], section[data-testid="stFileUploaderDropzone"],
+    div[data-testid="stFileUploader"] section, div[data-testid="stFileUploaderDropzone"] * {{
+        background-color: {input_bg_color} !important;
+        color: {input_text_color} !important;
+        border-color: {widget_border} !important;
     }}
 
     /* תיקון גורף לכל פופאפ, לוח שנה, תפריט נפתח (Selectbox Dropdown) ושכבות תפריט */
@@ -298,18 +301,19 @@ st.markdown(
         color: {text_color} !important;
     }}
 
-    /* עיצוב מושלם לכפתורי הפעולה הראשיים ותגובה לריחוף/לחיצה */
+    /* עיצוב אחיד ויציב לכפתורים - ללא שינוי צבע מפתיע בריחוף מעבר למה שמוגדר בצורה נקייה */
     div.stButton > button, div[data-testid="stFormSubmitButton"] > button {{
-        background-color: rgba(0, 122, 255, 0.15) !important;
+        background-color: rgba(0, 122, 255, 0.2) !important;
         color: {text_color} !important;
         border: 1px solid rgba(0, 122, 255, 0.4) !important;
         border-radius: 12px !important;
         font-weight: 700 !important;
-        transition: all 0.2s ease-in-out !important;
+        -webkit-transition: none !important;
+        transition: none !important;
     }}
     div.stButton > button:hover, div[data-testid="stFormSubmitButton"] > button:hover {{
         background-color: rgba(0, 122, 255, 0.35) !important;
-        border-color: rgba(0, 122, 255, 0.8) !important;
+        border-color: rgba(0, 122, 255, 0.7) !important;
         color: #ffffff !important;
     }}
     div.stButton > button:active, div.stButton > button:focus, div[data-testid="stFormSubmitButton"] > button:active {{
@@ -1572,3 +1576,4 @@ elif selected_tab == t["tab_settings"]:
                     st.error(f"Error updating account: {e}")
             else:
                 st.info("No changes made.")
+                
