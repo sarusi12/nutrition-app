@@ -46,12 +46,12 @@ TRANSLATIONS = {
         "tab_log": "📝 יומן אכילה",
         "tab_search": "🔍 חיפוש והוספה",
         "tab_water": "🚰 מעקב מים",
-        "tab_workouts": "💪 אימונים ושריפת קלוריות",
-        "tab_history": "📅 היסטוריה ויומן",
-        "tab_photos": "📸 תמונות מעקב",
-        "tab_camera": "📸 סריקת תמונה",
+        "tab_workouts": "💪 אימונים",
+        "tab_history": "📅 היסטוריה",
+        "tab_photos": "📸 תמונות",
+        "tab_camera": "📸 סריקה",
         "tab_ai": "🤖 יועץ AI",
-        "tab_settings": "⚙️ הגדרות פרופיל",
+        "tab_settings": "⚙️ הגדרות",
         "search_food": "חפש מאכל מהמאגר או הקלד לסינון",
         "unit_type": "יחידת מידה",
         "amount_val": "כמות",
@@ -108,12 +108,12 @@ TRANSLATIONS = {
         "tab_log": "📝 Food Log",
         "tab_search": "🔍 Search & Add",
         "tab_water": "🚰 Water Tracking",
-        "tab_workouts": "💪 Workouts & Calories",
-        "tab_history": "📅 History & Calendar",
-        "tab_photos": "📸 Progress Photos",
-        "tab_camera": "📸 Image Scan",
+        "tab_workouts": "💪 Workouts",
+        "tab_history": "📅 History",
+        "tab_photos": "📸 Photos",
+        "tab_camera": "📸 Scan",
         "tab_ai": "🤖 AI Advisor",
-        "tab_settings": "⚙️ Profile Settings",
+        "tab_settings": "⚙️ Settings",
         "search_food": "Search food from DB or type to filter",
         "unit_type": "Unit type",
         "amount_val": "Amount",
@@ -214,29 +214,23 @@ st.markdown(
         direction: {dir_val} !important;
     }}
 
-    /* פתרון מושלם לניווט (במקום st.tabs הרגיש לבעיות של סטרימלייט) */
-    div.row-widget.stRadio > div {{
-        background-color: {widget_bg} !important;
-        padding: 10px !important;
-        border-radius: 16px !important;
-        border: 1px solid {widget_border} !important;
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: wrap !important;
-        gap: 8px !important;
-        justify-content: center !important;
-    }}
-    div.row-widget.stRadio > div label {{
-        background-color: rgba(0, 122, 255, 0.1) !important;
-        padding: 8px 14px !important;
-        border-radius: 10px !important;
-        border: 1px solid rgba(0, 122, 255, 0.3) !important;
-        cursor: pointer !important;
-        font-weight: 700 !important;
+    /* עיצוב מושלם לכפתורי הפעולה הראשיים (כמו הוספת מאכל) ותגובה לריחוף/לחיצה */
+    div.stButton > button {{
+        background-color: rgba(0, 122, 255, 0.15) !important;
         color: {text_color} !important;
+        border: 1px solid rgba(0, 122, 255, 0.4) !important;
+        border-radius: 12px !important;
+        font-weight: 700 !important;
+        transition: all 0.2s ease-in-out !important;
     }}
-    div.row-widget.stRadio > div label:hover {{
-        background-color: rgba(0, 122, 255, 0.25) !important;
+    div.stButton > button:hover {{
+        background-color: rgba(0, 122, 255, 0.35) !important;
+        border-color: rgba(0, 122, 255, 0.8) !important;
+        color: #ffffff !important;
+    }}
+    div.stButton > button:active, div.stButton > button:focus {{
+        background-color: rgba(0, 122, 255, 0.5) !important;
+        color: #ffffff !important;
     }}
 
     /* תפריטי בחירה נפתחים (Selectbox / Dropdown) במצב לילה */
@@ -337,12 +331,6 @@ st.markdown(
         align-items: center !important;
         -webkit-transition: all 0.2s ease-in-out !important;
         transition: all 0.2s ease-in-out !important;
-    }}
-    
-    div[data-testid="column"] div.stButton > button[key*="w_btn_"]:hover {{
-        border-color: rgba(0, 122, 255, 0.5) !important;
-        -webkit-transform: translateY(-2px);
-        transform: translateY(-2px);
     }}
 
     .streamlit-expanderHeader {{
@@ -843,12 +831,26 @@ selected_date = st.sidebar.date_input("בחר תאריך", date.today()).strftim
 goals_res = supabase.table("daily_goals").select("*").eq("user_id", user_id).eq("date", selected_date).execute()
 user_goals = goals_res.data[0] if goals_res.data else {"target_calories": 2200, "target_protein": 170, "target_carbs": 220, "target_fat": 60}
 
-# --- החלפת st.tabs הבעייתי ב-st.radio מותאם אישית ויציב לחלוטין ---
-nav_options = [
+# --- מערכת ניווט עליונה מבוססת כפתורי קונטיינר ויציבה ב-100% במצב לילה ---
+if "current_nav_tab" not in st.session_state:
+    st.session_state["current_nav_tab"] = t["tab_log"]
+
+nav_keys = [
     t["tab_log"], t["tab_search"], t["tab_water"], t["tab_workouts"], 
     t["tab_history"], t["tab_photos"], t["tab_camera"], t["tab_ai"], t["tab_settings"]
 ]
-selected_tab = st.radio("בחר עמוד:", nav_options, horizontal=True, label_visibility="collapsed")
+
+nav_cols = st.columns(len(nav_keys))
+for idx, tab_name in enumerate(nav_keys):
+    with nav_cols[idx]:
+        is_active = (st.session_state["current_nav_tab"] == tab_name)
+        btn_style = "primary" if is_active else "secondary"
+        if st.button(tab_name, key=f"nav_btn_{idx}", use_container_width=True, type=btn_style):
+            st.session_state["current_nav_tab"] = tab_name
+            st.rerun()
+
+selected_tab = st.session_state["current_nav_tab"]
+st.divider()
 
 # ניתוב התוכן לפי הטאב הנבחר
 if selected_tab == t["tab_search"]:
