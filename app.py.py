@@ -284,8 +284,9 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# --- מאגר מובנה ענק ועשיר ---
+# --- מאגר מובנה ענק ועשיר (כולל מסעדות, ג'אנק פוד וצ'יטים) ---
 LOCAL_DATABASE = {
+    # --- בסיסי וביצים ---
     "ביצה שלמה (גדולה / L)": {"cal": 75.0, "p": 6.3, "c": 0.4, "f": 5.3},
     "חביתה (משתי ביצים מטוגנת בשמן רגיל)": {"cal": 185.0, "p": 13.0, "c": 1.0, "f": 13.5},
     "חביתה (משתי ביצים מטוגנת בשמן זית)": {"cal": 190.0, "p": 13.0, "c": 1.0, "f": 14.0},
@@ -297,6 +298,8 @@ LOCAL_DATABASE = {
     "ביצת עין (מטוגנת בשמן רגיל)": {"cal": 92.0, "p": 6.3, "c": 0.5, "f": 7.2},
     "ביצת עין (מטוגנת בשמן זית)": {"cal": 96.0, "p": 6.3, "c": 0.5, "f": 7.6},
     "חלבון ביצה (לבן בלבד)": {"cal": 52.0, "p": 10.9, "c": 0.7, "f": 0.2},
+    
+    # --- רטבים וממרחים ---
     "מיונז (כף / 15 גרם)": {"cal": 105.0, "p": 0.1, "c": 0.1, "f": 11.5},
     "מיונז קל (כף / 15 גרם)": {"cal": 45.0, "p": 0.1, "c": 1.0, "f": 4.5},
     "קטשופ (כף / 15 גרם)": {"cal": 15.0, "p": 0.2, "c": 3.5, "f": 0.0},
@@ -309,10 +312,14 @@ LOCAL_DATABASE = {
     "טחינה מוכנה (כף / 15 גרם)": {"cal": 43.0, "p": 1.3, "c": 1.6, "f": 4.0},
     "רוטב סויה (כף / 15 גרם)": {"cal": 8.0, "p": 1.2, "c": 0.8, "f": 0.0},
     "רוטב טריאקי (כף / 15 גרם)": {"cal": 25.0, "p": 0.4, "c": 5.8, "f": 0.0},
+    
+    # --- לחמים וטוסטים ---
     "טוסט מלחם אחיד עם גבינה צהובה 9%": {"cal": 240.0, "p": 16.0, "c": 30.0, "f": 5.0},
     "טוסט מלחם אחיד עם גבינה צהובה 28%": {"cal": 300.0, "p": 14.0, "c": 30.0, "f": 12.0},
     "טוסט מלחם קל עם גבינה צהובה 9%": {"cal": 180.0, "p": 17.0, "c": 20.0, "f": 4.0},
     "טוסט מלחם קל עם גבינה צהובה 28%": {"cal": 240.0, "p": 15.0, "c": 20.0, "f": 11.0},
+    
+    # --- סלטים ---
     "סלט ירקות קצוץ (עם כפית שמן זית)": {"cal": 55.0, "p": 1.2, "c": 4.5, "f": 4.0},
     "סלט ירקות קצוץ (ללא שמן)": {"cal": 20.0, "p": 1.0, "c": 4.2, "f": 0.3},
     "סלט יווני (עם בולגרית וזיתים)": {"cal": 110.0, "p": 4.5, "c": 5.0, "f": 8.5},
@@ -323,6 +330,8 @@ LOCAL_DATABASE = {
     "סלט עגבניות שרי ובצל סגול": {"cal": 45.0, "p": 1.2, "c": 5.5, "f": 2.5},
     "סלט קיסר (עם קרוטונים ופרמזן)": {"cal": 190.0, "p": 6.0, "c": 12.0, "f": 13.0},
     "סלט סלק מבושל קצוץ": {"cal": 45.0, "p": 1.6, "c": 10.0, "f": 0.2},
+    
+    # --- חלבונים ומעדנים ---
     "טחינה גולמית": {"cal": 595.0, "p": 17.0, "c": 21.0, "f": 53.8},
     "חמאת בוטנים טבעית / רגילה": {"cal": 588.0, "p": 25.0, "c": 20.0, "f": 50.0},
     "משקה חלבון יטבתה PRO 40g": {"cal": 64.0, "p": 16.0, "c": 3.2, "f": 0.4},
@@ -358,6 +367,8 @@ LOCAL_DATABASE = {
     "יוגורט טבעי 0%": {"cal": 40.0, "p": 5.0, "c": 5.0, "f": 0.2},
     "חלב 3%": {"cal": 60.0, "p": 3.3, "c": 4.7, "f": 3.0},
     "חלב 1%": {"cal": 42.0, "p": 3.4, "c": 4.8, "f": 1.0},
+
+    # --- פחמימות ותוספות ---
     "אורז לבן מבושל": {"cal": 130.0, "p": 2.7, "c": 28.0, "f": 0.3},
     "אורז מלא מבושל": {"cal": 111.0, "p": 2.6, "c": 23.0, "f": 0.9},
     "פסטה מבושלת": {"cal": 131.0, "p": 5.0, "c": 25.0, "f": 1.1},
@@ -375,6 +386,8 @@ LOCAL_DATABASE = {
     "פיתה": {"cal": 275.0, "p": 8.5, "c": 55.0, "f": 1.2},
     "אורז בסמטי מבושל": {"cal": 130.0, "p": 2.8, "c": 28.0, "f": 0.2},
     "קוסקוס מבושל": {"cal": 112.0, "p": 3.8, "c": 23.2, "f": 0.2},
+
+    # --- ירקות ופירות ---
     "שעועית ירוקה": {"cal": 31.0, "p": 1.8, "c": 7.0, "f": 0.1},
     "שעועית ירוקה מבושלת": {"cal": 35.0, "p": 1.9, "c": 7.9, "f": 0.2},
     "ברוקולי": {"cal": 34.0, "p": 2.8, "c": 6.6, "f": 0.4},
@@ -407,6 +420,24 @@ LOCAL_DATABASE = {
     "אבוקדו": {"cal": 160.0, "p": 2.0, "c": 8.5, "f": 14.7},
     "אגוזי מלך": {"cal": 654.0, "p": 15.2, "c": 13.7, "f": 65.2},
     "שקדים": {"cal": 579.0, "p": 21.1, "c": 21.6, "f": 49.9},
+
+    # --- 🍔 ג'אנק פוד, צ'יט מייל ומסעדות (נוסף לבקשתך) ---
+    "פיצה (משולש סטנדרטי)": {"cal": 270.0, "p": 12.0, "c": 30.0, "f": 11.0},
+    "פיצה משפחתית (מגש שלם - ממוצע)": {"cal": 2200.0, "p": 90.0, "c": 240.0, "f": 95.0},
+    "המבורגר במסעדה (כולל לחמנייה ורוטב - יחידה)": {"cal": 650.0, "p": 35.0, "c": 45.0, "f": 36.0},
+    "המבורגר רשתות (כגון מקדונלד'ס / ברגר קינג - בינוני)": {"cal": 500.0, "p": 25.0, "c": 40.0, "f": 26.0},
+    "צ'יפס מטוגן (מנה בינונית)": {"cal": 365.0, "p": 4.0, "c": 48.0, "f": 17.0},
+    "שווארמה בלאפה (כולל טחינה וסלטים)": {"cal": 950.0, "p": 45.0, "c": 85.0, "f": 48.0},
+    "שווארמה בפיתה (כולל טחינה וסלטים)": {"cal": 750.0, "p": 38.0, "c": 65.0, "f": 35.0},
+    "מנת פלאפל בפיתה (עם חומוס וצ'יפס)": {"cal": 620.0, "p": 22.0, "c": 78.0, "f": 25.0},
+    "סושי - רול מטוגן (רול / 8 יחידות)": {"cal": 420.0, "p": 10.0, "c": 55.0, "f": 18.0},
+    "סושי - רול דג סלמון / טונה בהרכבה (רול / 8 יחידות)": {"cal": 310.0, "p": 14.0, "c": 45.0, "f": 8.0},
+    "סושי - רול צמחוני (מלפפון / אבוקדו / בטטה)": {"cal": 250.0, "p": 5.0, "c": 50.0, "f": 4.0},
+    "בורקס גבינה / תפוח אדמה (יחידה גדולה מהמאפייה)": {"cal": 450.0, "p": 8.0, "c": 45.0, "f": 26.0},
+    "גלידה (כדור אחד במסעדה / גלידריה)": {"cal": 220.0, "p": 4.0, "c": 26.0, "f": 12.0},
+    "חטיף שוקולד סטנדרטי (כגון טוויקס / פפס / סניקרס)": {"cal": 250.0, "p": 4.0, "c": 30.0, "f": 13.0},
+    "בורגר צ'יקן / שניצל בלחמנייה (פאסט פוד)": {"cal": 550.0, "p": 28.0, "c": 50.0, "f": 24.0},
+    "כנפי עוף מטוגנות ברוטב ברביקיו / צ'ילי (6 יחידות)": {"cal": 480.0, "p": 26.0, "c": 15.0, "f": 35.0},
 }
 
 # --- פונקציות עזר גלובליות לחישוב יחידות חכמות ---
@@ -414,6 +445,15 @@ def get_unit_options(item_name):
     if not item_name or item_name == "-- ללא --":
         return ["גרם", "יחידות", "כפות"], 0
         
+    if "פיצה" in item_name and "מגש" not in item_name:
+        return ["יחידות (משולשים)", "גרם"], 0
+    if "המבורגר" in item_name or "שווארמה" in item_name or "פלאפל" in item_name or "בורקס" in item_name or "חטיף שוקולד" in item_name or "גלידה" in item_name:
+        return ["יחידות", "גרם"], 0
+    if "סושי" in item_name:
+        return ["רולים / יחידות", "גרם"], 0
+    if "צ'יפס" in item_name or "כנפי עוף" in item_name:
+        return ["מנה", "גרם"], 0
+
     if any(k in item_name for k in ["מיונז", "קטשופ", "סרירצ'ה", "צ'ילי", "שום", "אלף האיים", "חרדל", "ויניגרט", "סויה", "טריאקי"]):
         return ["כפות", "גרם"], 0
 
@@ -444,11 +484,19 @@ def calc_grams(item_name, unit, raw_amount):
     if not item_name or item_name == "-- ללא --": return raw_amount
     if unit == "כפות": return raw_amount * 15.0
     elif unit == "כפיות": return raw_amount * 5.0
-    elif unit == "קערה / מנה": return raw_amount * 200.0
+    elif unit == "קערה / מנה" or unit == "מנה": return raw_amount * 200.0
     elif unit == "בקבוק": return raw_amount * 250.0 
     elif unit == "סקופ": return raw_amount * 30.0
-    elif unit in ["יחידות", "אריזה / יחידה"]:
-        if "חביתה (משתי ביצים" in item_name: return raw_amount * 120.0
+    elif unit in ["יחידות", "אריזה / יחידה", "יחידות (משולשים)", "רולים / יחידות"]:
+        if "פיצה (משולש" in item_name: return raw_amount * 100.0
+        elif "המבורגר" in item_name: return raw_amount * 250.0
+        elif "שווארמה" in item_name: return raw_amount * 350.0
+        elif "פלאפל" in item_name: return raw_amount * 250.0
+        elif "סושי" in item_name: return raw_amount * 200.0
+        elif "בורקס" in item_name: return raw_amount * 150.0
+        elif "גלידה" in item_name: return raw_amount * 80.0
+        elif "חטיף שוקולד" in item_name: return raw_amount * 50.0
+        elif "חביתה (משתי ביצים" in item_name: return raw_amount * 120.0
         elif "חביתה (משלוש ביצים" in item_name: return raw_amount * 180.0
         elif "חביתת ירק" in item_name: return raw_amount * 130.0
         elif "ביצה קשה" in item_name or "ביצה שלמה" in item_name or "ביצת עין" in item_name: return raw_amount * 50.0
@@ -613,7 +661,7 @@ user_goals = goals_res.data[0] if goals_res.data else {"target_calories": 2200, 
 tab_log, tab_auto_add, tab_workouts, tab_history, tab_camera, tab_ai, tab_settings = st.tabs([t["tab_log"], t["tab_search"], t["tab_workouts"], t["tab_history"], t["tab_camera"], t["tab_ai"], t["tab_settings"]])
 
 with tab_auto_add:
-    st.subheader("🔍 חיפוש והוספת מאכל או ארוחה שלמה (כולל חיפוש חופשי של כל מוצר בסופר)")
+    st.subheader("🔍 חיפוש והוספת מאכל או ארוחה שלמה (כולל ג'אנק פוד, פיצה, המבורגרים וצ'יט מייל)")
     
     add_mode = st.radio("בחר אופן הוספה:", ["מאכל בודד", "🍽️ הוספת ארוחה שלמה בבת אחת"])
     
@@ -622,7 +670,7 @@ with tab_auto_add:
 
     if add_mode == "מאכל בודד":
         selected_from_db = st.selectbox(t["search_food"], options=food_options, key="food_selectbox_autocomplete")
-        custom_search = st.text_input("או הקלד כל מוצר אחר שתרצה מהסופר (למשל: רטבים, חטיפים, מעדנים וכו'):", key="custom_food_input")
+        custom_search = st.text_input("או הקלד כל מוצר אחר שתרצה מהסופר או ממסעדה:", key="custom_food_input")
         
         active_search_name = custom_search.strip() if custom_search.strip() else (selected_from_db if selected_from_db != "-- בחר מאכל מהרשימה (הקלד לסינון) --" else "")
         
@@ -632,7 +680,7 @@ with tab_auto_add:
         with col_u1:
             chosen_unit = st.selectbox(t["unit_type"], u_opts, index=def_idx, key="food_unit_selection")
         with col_u2:
-            default_val = 1.0 if chosen_unit in ["בקבוק", "סקופ", "יחידות", "כפות", "קערה / מנה", "כפיות", "אריזה / יחידה"] else 100.0
+            default_val = 1.0 if chosen_unit in ["בקבוק", "סקופ", "יחידות", "כפות", "קערה / מנה", "כפיות", "אריזה / יחידה", "יחידות (משולשים)", "רולים / יחידות", "מנה"] else 100.0
             raw_amount = st.number_input(t["amount_val"], min_value=0.1, value=default_val, step=1.0 if chosen_unit != "גרם" else 10.0, key=f"food_amount_input_{chosen_unit}")
 
         amount_input = calc_grams(active_search_name, chosen_unit, raw_amount)
@@ -662,7 +710,7 @@ with tab_auto_add:
             c1, c2 = st.columns(2)
             unit_sel = c1.selectbox(f"סוג ({idx})", u_opts, index=def_idx, key=f"meal_unit_{idx}", label_visibility="collapsed")
             
-            d_val = 1.0 if unit_sel in ["בקבוק", "סקופ", "יחידות", "כפות", "קערה / מנה", "כפיות", "אריזה / יחידה"] else 100.0
+            d_val = 1.0 if unit_sel in ["בקבוק", "סקופ", "יחידות", "כפות", "קערה / מנה", "כפיות", "אריזה / יחידה", "יחידות (משולשים)", "רולים / יחידות", "מנה"] else 100.0
             
             amt_val = c2.number_input(f"כמות ({idx})", min_value=0.1, value=d_val, step=1.0 if unit_sel != "גרם" else 10.0, key=f"meal_amt_{idx}_{unit_sel}", label_visibility="collapsed")
             return item_sel, unit_sel, amt_val
@@ -709,25 +757,23 @@ with tab_auto_add:
 with tab_workouts:
     st.subheader(t["workouts_header"])
     
-    # שימוש בטופס חי (ללא st.form) כך שכל שינוי בדקות או בסוג האימון מעדכן מיד את המספרים
     w_type = st.selectbox(t["workout_type"], ["פאדל (Padel)", "חדר כושר / משקולות", "ריצה / אירובי", "כדורגל / ספורט קבוצתי", "אופניים", "שחייה", "אחר"])
     w_duration = st.number_input(t["workout_duration"], min_value=5, max_value=300, value=60, step=5)
     
-    # חישוב קלוריות אוטומטי מדויק לפי סוג האימון והדקות
     if "משקולות" in w_type:
-        burn_rate_active = 6.3   # אימון משקולות (כולל הפסקות מנוחה בין סטים)
+        burn_rate_active = 6.3
     elif "פאדל" in w_type:
-        burn_rate_active = 8.5   # פאדל (תנועה דינמית מתמשכת)
+        burn_rate_active = 8.5
     elif "ריצה" in w_type:
-        burn_rate_active = 11.2  # ריצה / אירובי (דופק גבוה ורציף)
+        burn_rate_active = 11.2
     elif "כדורגל" in w_type:
-        burn_rate_active = 10.0  # ספורט קבוצתי אינטנסיבי
+        burn_rate_active = 10.0
     elif "אופניים" in w_type:
-        burn_rate_active = 8.8   # רכיבת אופניים
+        burn_rate_active = 8.8
     elif "שחייה" in w_type:
-        burn_rate_active = 9.5   # שחייה
+        burn_rate_active = 9.5
     else:
-        burn_rate_active = 7.5   # אחר
+        burn_rate_active = 7.5
 
     calc_active = int(w_duration * burn_rate_active)
     calc_total = int(calc_active * 1.35)
