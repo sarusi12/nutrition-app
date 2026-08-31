@@ -229,8 +229,15 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# --- מאגר מובנה מעודכן ועשיר ---
+# --- מאגר מובנה ענק ועשיר הכולל את כל סוגי הביצים והחביתות ---
 LOCAL_DATABASE = {
+    "ביצה שלמה (גדולה / L)": {"cal": 75.0, "p": 6.3, "c": 0.4, "f": 5.3},
+    "חביתה (משתי ביצים עם מעט שמן)": {"cal": 180.0, "p": 13.0, "c": 1.0, "f": 13.0},
+    "חביתה (משלוש ביצים עם מעט שמן)": {"cal": 265.0, "p": 19.5, "c": 1.5, "f": 19.0},
+    "חביתה ירק (משתי ביצים עם עשבי תיבול)": {"cal": 190.0, "p": 13.2, "c": 2.0, "f": 13.5},
+    "ביצה קשה": {"cal": 75.0, "p": 6.3, "c": 0.4, "f": 5.3},
+    "ביצת עין (מטוגנת בשמן זית/חמאה)": {"cal": 95.0, "p": 6.3, "c": 0.5, "f": 7.5},
+    "חלבון ביצה (לבן בלבד)": {"cal": 52.0, "p": 10.9, "c": 0.7, "f": 0.2},
     "טוסט מלחם אחיד עם גבינה צהובה 9%": {"cal": 240.0, "p": 16.0, "c": 30.0, "f": 5.0},
     "טוסט מלחם אחיד עם גבינה צהובה 28%": {"cal": 300.0, "p": 14.0, "c": 30.0, "f": 12.0},
     "טוסט מלחם קל עם גבינה צהובה 9%": {"cal": 180.0, "p": 17.0, "c": 20.0, "f": 4.0},
@@ -272,8 +279,6 @@ LOCAL_DATABASE = {
     "מושט / אמנון": {"cal": 96.0, "p": 20.0, "c": 0.0, "f": 1.7},
     "בקלה": {"cal": 82.0, "p": 18.0, "c": 0.0, "f": 0.7},
     "שרימפס": {"cal": 99.0, "p": 24.0, "c": 0.2, "f": 0.3},
-    "ביצה": {"cal": 155.0, "p": 12.6, "c": 1.1, "f": 10.6},
-    "חלבון ביצה (לבן)": {"cal": 52.0, "p": 10.9, "c": 0.7, "f": 0.2},
     "קוטג' 5%": {"cal": 95.0, "p": 11.0, "c": 1.5, "f": 5.0},
     "קוטג' 3%": {"cal": 80.0, "p": 11.0, "c": 1.5, "f": 3.0},
     "גבינה לבנה 5%": {"cal": 100.0, "p": 10.0, "c": 3.5, "f": 5.0},
@@ -339,8 +344,8 @@ def get_unit_options(item_name):
     if not item_name or item_name == "-- ללא --":
         return ["גרם", "יחידות", "כפות"], 0
         
-    # 1. טוסטים, לחם, ביצה, פירות, וגבינה צהובה (פרוסות) - יחידות כברירת מחדל
-    if any(k in item_name for k in ["טוסט", "פרוסת", "פיתה", "לחם", "ביצה", "בננה", "תפוח", "תפוז", "אגס", "עגבנייה", "מלפפון", "גבינה צהובה"]):
+    # 1. טוסטים, לחם, ביצים, חביתות, פירות - יחידות כברירת מחדל
+    if any(k in item_name for k in ["טוסט", "פרוסת", "פיתה", "לחם", "ביצה", "חביתה", "בננה", "תפוח", "תפוז", "אגס", "עגבנייה", "מלפפון", "גבינה צהובה"]):
         return ["יחידות", "גרם"], 0
         
     # 2. משקאות - מקבלים "בקבוק"
@@ -363,7 +368,7 @@ def get_unit_options(item_name):
     if any(k in item_name for k in ["טונה", "קוטג'", "גבינה", "יוגורט", "חלב"]):
         return ["גרם", "כפות", "אריזה / יחידה"], 0
         
-    # 7. בשרים ודגים - בדר"כ לפי גרם, אבל אפשר לבחור ביחידה (שניצל, נתח סלמון וכו')
+    # 7. בשרים ודגים - גרם או יחידות
     if any(k in item_name for k in ["חזה עוף", "שניצל", "סלמון", "סטייק", "פרגיות", "בקר", "דניס", "מושט", "בקלה", "שרימפס"]):
         return ["גרם", "יחידות"], 0
         
@@ -378,9 +383,12 @@ def calc_grams(item_name, unit, raw_amount):
     elif unit == "בקבוק": return raw_amount * 250.0 
     elif unit == "סקופ": return raw_amount * 30.0
     elif unit in ["יחידות", "אריזה / יחידה"]:
-        if "ביצה" in item_name: return raw_amount * 50.0
+        if "חביתה (משתי ביצים" in item_name: return raw_amount * 120.0
+        elif "חביתה (משלוש ביצים" in item_name: return raw_amount * 180.0
+        elif "חביתה ירק" in item_name: return raw_amount * 130.0
+        elif "ביצה קשה" in item_name or "ביצה שלמה" in item_name or "ביצת עין" in item_name: return raw_amount * 50.0
         elif "טוסט" in item_name: return raw_amount * 100.0  
-        elif "גבינה צהובה" in item_name: return raw_amount * 25.0  # פרוסת גבינה צהובה סטנדרטית (עמק/נועם)
+        elif "גבינה צהובה" in item_name: return raw_amount * 25.0  
         elif "פרוסת לחם" in item_name: return raw_amount * 35.0
         elif "פיתה" in item_name: return raw_amount * 100.0
         elif any(k in item_name for k in ["בננה", "תפוח", "תפוז", "אגס"]): return raw_amount * 120.0
@@ -540,7 +548,7 @@ user_goals = goals_res.data[0] if goals_res.data else {"target_calories": 2200, 
 tab_log, tab_auto_add, tab_workouts, tab_camera, tab_ai, tab_settings = st.tabs([t["tab_log"], t["tab_search"], t["tab_workouts"], t["tab_camera"], t["tab_ai"], t["tab_settings"]])
 
 with tab_auto_add:
-    st.subheader("🔍 חיפוש והוספת מאכל או ארוחה שלמה")
+    st.subheader("🔍 חיפוש והוספת מאכל או ארוחה שלמה (כולל חיפוש חופשי של כל מוצר בסופר)")
     
     add_mode = st.radio("בחר אופן הוספה:", ["מאכל בודד", "🍽️ הוספת ארוחה שלמה בבת אחת"])
     
@@ -549,7 +557,7 @@ with tab_auto_add:
 
     if add_mode == "מאכל בודד":
         selected_from_db = st.selectbox(t["search_food"], options=food_options, key="food_selectbox_autocomplete")
-        custom_search = st.text_input("או הקלד שם מאכל אחר לחיפוש חופשי (אם לא נמצא ברשימה):", key="custom_food_input")
+        custom_search = st.text_input("או הקלד כל מוצר אחר שתרצה מהסופר (למשל: קורנפלקס תלמה, מילקי, פריכיות וכו'):", key="custom_food_input")
         
         active_search_name = custom_search.strip() if custom_search.strip() else (selected_from_db if selected_from_db != "-- בחר מאכל מהרשימה (הקלד לסינון) --" else "")
         
@@ -576,7 +584,7 @@ with tab_auto_add:
                     supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": food_id, "amount_grams": amount_input, "meal_type": meal_type_sel}).execute()
                     st.success(f"✅ הצלחה! המאכל '{item_name}' ({raw_amount} {chosen_unit}) התווסף בהצלחה לארוחת {meal_type_sel}.")
                 else:
-                    st.error("לא נמצאו נתונים תזונתיים עבור מאכל זה.")
+                    st.error("לא נמצאו נתונים תזונתיים עבור מאכל זה במאגר.")
             else:
                 st.warning("נא לבחור מאכל מהרשימה או להקליד חיפוש חופשי.")
 
@@ -821,8 +829,16 @@ with tab_log:
                             display_amt = "1 בקבוק (250 מ\"ל)"
                         elif amt == 112.0 and "טונה" in food_item['name']:
                             display_amt = "1 קופסת טונה"
-                        elif amt == 50.0 and "ביצה" in food_item['name']:
-                            display_amt = "1 ביצה"
+                        elif "חביתה" in food_item['name']:
+                            if amt == 120.0: display_amt = "1 חביתה (2 ביצים)"
+                            elif amt == 180.0: display_amt = "1 חביתה (3 ביצים)"
+                            elif amt == 130.0: display_amt = "1 חביתת ירק"
+                            elif amt % 120.0 == 0: display_amt = f"{int(amt / 120.0)} חביתיות"
+                            else: display_amt = f"{amt} גרם"
+                        elif "ביצה" in food_item['name'] or "ביצת עין" in food_item['name']:
+                            if amt == 50.0: display_amt = "1 ביצה"
+                            elif amt % 50.0 == 0: display_amt = f"{int(amt / 50.0)} ביצים"
+                            else: display_amt = f"{amt} גרם"
                         elif "גבינה צהובה" in food_item['name']:
                             if amt == 25.0: display_amt = "1 פרוסה"
                             elif amt % 25.0 == 0: display_amt = f"{int(amt / 25.0)} פרוסות"
