@@ -259,8 +259,8 @@ st.markdown(
         line-height: 1.4;
     }}
 
-    /* עיצוב כפתורי הוספת מים כך שיהיו גדולים, מרובעים, מזמינים ובדיוק באותו סגנון */
-    .stButton > button {{
+    /* עיצוב ייעודי אך ורק לכפתורי הוספת מים (Water Buttons) כך שיראו כמו הווידג'טים */
+    div[data-testid="column"] div.stButton > button[key*="w_btn_"] {{
         background: linear-gradient(135deg, rgba(0, 122, 255, 0.06), rgba(88, 86, 214, 0.06)) !important;
         backdrop-filter: blur(20px) !important;
         -webkit-backdrop-filter: blur(20px) !important;
@@ -279,7 +279,7 @@ st.markdown(
         transition: all 0.2s ease-in-out !important;
     }}
     
-    .stButton > button:hover {{
+    div[data-testid="column"] div.stButton > button[key*="w_btn_"]:hover {{
         border-color: rgba(0, 122, 255, 0.5) !important;
         transform: translateY(-2px);
     }}
@@ -304,7 +304,7 @@ st.markdown(
             min-width: unset !important;
             margin-bottom: 10px;
         }}
-        .stButton > button {{
+        div[data-testid="column"] div.stButton > button[key*="w_btn_"] {{
             height: 85px !important;
         }}
     }}
