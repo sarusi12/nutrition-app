@@ -49,7 +49,7 @@ TRANSLATIONS = {
         "dinner": "ערב",
         "snack": "נשנוש / אימון",
         "add_btn": "הוסף מאכל נבחר ליומן",
-        "daily_summary": "📊 סיכום יומי",
+        "daily_summary": "📊 סיכום יומי (לחץ על כרטיסייה לצפייה בפרטים)",
         "calories": "קלוריות",
         "protein": "חלבון",
         "carbs": "פחמימות",
@@ -166,18 +166,6 @@ st.markdown(
         background-color: {bg_color};
         color: {text_color};
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }}
-    
-    .ios-widget {{
-        background: {widget_bg};
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid {widget_border};
-        border-radius: 20px;
-        padding: 20px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
-        margin-bottom: 10px;
-        text-align: center;
     }}
     
     .flipped-card {{
@@ -546,7 +534,7 @@ with tab_camera:
             st.success("הארוחה נוספה!")
             st.rerun()
 
-# --- מסך יומן אכילה ראשי עם ווידג'טים גדולים בסגנון iOS וכפתורי היפוך מתחתיהם ---
+# --- מסך יומן אכילה ראשי שבו כל וידג'ט עצמו הוא כפתור הפוך ---
 with tab_log:
     st.subheader(f"תיעוד ארוחות לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
@@ -562,62 +550,32 @@ with tab_log:
 
     st.divider()
     st.subheader(t["daily_summary"])
-    st.caption("💡 הצג את הווידג'טים הגדולים, ולחץ על כפתור ההיפוך מתחת לכל אחד מהם כדי לצפות בצד האחורי!")
+    st.caption("💡 לחץ ישירות על כרטיסיית הווידג'ט (קלוריות, חלבון, פחמימה או שומן) כדי לראות את הנתונים והרכב המאכלים מאחוריה!")
 
     if "flipped_card" not in st.session_state:
         st.session_state["flipped_card"] = None
 
-    # הצגת הווידג'טים הגדולים המקוריים בשורה אחת
+    # יצירת הווידג'טים כך שכל אחד מהם הוא כפתור מלא מעוצב בגודל מלא
     col1, col2, col3, col4 = st.columns(4)
+    
     with col1:
-        st.markdown(f"""
-        <div class="ios-widget">
-            <h4>🔥 {t['calories']}</h4>
-            <h2>{round(consumed_cal, 1)}</h2>
-            <p>Burned: -{total_burned_cals} | Target: {user_goals['target_calories']}</p>
-        </div>
-        """, unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"""
-        <div class="ios-widget">
-            <h4>🥩 {t['protein']}</h4>
-            <h2>{round(consumed_p, 1)}g</h2>
-            <p>Target: {user_goals['target_protein']}g</p>
-        </div>
-        """, unsafe_allow_html=True)
-    with col3:
-        st.markdown(f"""
-        <div class="ios-widget">
-            <h4>🍞 {t['carbs']}</h4>
-            <h2>{round(consumed_c, 1)}g</h2>
-            <p>Target: {user_goals['target_carbs']}g</p>
-        </div>
-        """, unsafe_allow_html=True)
-    with col4:
-        st.markdown(f"""
-        <div class="ios-widget">
-            <h4>🥑 {t['fat']}</h4>
-            <h2>{round(consumed_f, 1)}g</h2>
-            <p>Target: {user_goals['target_fat']}g</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # כפתורי שליטה מתחת לווידג'טים להצגת הצד האחורי
-    b_col1, b_col2, b_col3, b_col4 = st.columns(4)
-    with b_col1:
-        if st.button("🔄 הפוך קלוריות", use_container_width=True):
+        btn_cal_text = f"🔥 קלוריות\n{round(consumed_cal, 1)} / {user_goals['target_calories']}"
+        if st.button(btn_cal_text, key="card_btn_cal", use_container_width=True):
             st.session_state["flipped_card"] = "cal" if st.session_state["flipped_card"] != "cal" else None
-    with b_col2:
-        if st.button("🔄 הפוך חלבון", use_container_width=True):
+    with col2:
+        btn_p_text = f"🥩 חלבון\n{round(consumed_p, 1)}g / {user_goals['target_protein']}g"
+        if st.button(btn_p_text, key="card_btn_protein", use_container_width=True):
             st.session_state["flipped_card"] = "protein" if st.session_state["flipped_card"] != "protein" else None
-    with b_col3:
-        if st.button("🔄 הפוך פחמימה", use_container_width=True):
+    with col3:
+        btn_c_text = f"🍞 פחמימה\n{round(consumed_c, 1)}g / {user_goals['target_carbs']}g"
+        if st.button(btn_c_text, key="card_btn_carbs", use_container_width=True):
             st.session_state["flipped_card"] = "carbs" if st.session_state["flipped_card"] != "carbs" else None
-    with b_col4:
-        if st.button("🔄 הפוך שומן", use_container_width=True):
+    with col4:
+        btn_f_text = f"🥑 שומן\n{round(consumed_f, 1)}g / {user_goals['target_fat']}g"
+        if st.button(btn_f_text, key="card_btn_fat", use_container_width=True):
             st.session_state["flipped_card"] = "fat" if st.session_state["flipped_card"] != "fat" else None
 
-    # אזור הצד האחורי של הכרטיס שנבחר
+    # הצגת הצד האחורי של הכרטיסייה שנבחרה
     if st.session_state["flipped_card"]:
         fc = st.session_state["flipped_card"]
         st.markdown("<br>", unsafe_allow_html=True)
@@ -633,7 +591,7 @@ with tab_log:
                             st.write(f"• **{e['food_items']['name']}** ({e['amount_grams']} גרם) תרם **+{round(p_val, 1)}g** חלבון (ארוחת *{e['meal_type']}*)")
                 else:
                     st.info("אין נתונים להיום.")
-                if st.button("סגור צד אחורי ✕", key="close_flip_p"):
+                if st.button("סגור כרטיס ✕", key="close_flip_p"):
                     st.session_state["flipped_card"] = None
                     st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
@@ -648,7 +606,7 @@ with tab_log:
                             st.write(f"• **{e['food_items']['name']}** ({e['amount_grams']} גרם) תרם **+{round(c_val, 1)}g** פחמימה (ארוחת *{e['meal_type']}*)")
                 else:
                     st.info("אין נתונים להיום.")
-                if st.button("סגור צד אחורי ✕", key="close_flip_c"):
+                if st.button("סגור כרטיס ✕", key="close_flip_c"):
                     st.session_state["flipped_card"] = None
                     st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
@@ -663,7 +621,7 @@ with tab_log:
                             st.write(f"• **{e['food_items']['name']}** ({e['amount_grams']} גרם) תרם **+{round(f_val, 1)}g** שומן (ארוחת *{e['meal_type']}*)")
                 else:
                     st.info("אין נתונים להיום.")
-                if st.button("סגור צד אחורי ✕", key="close_flip_f"):
+                if st.button("סגור כרטיס ✕", key="close_flip_f"):
                     st.session_state["flipped_card"] = None
                     st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
@@ -678,7 +636,7 @@ with tab_log:
                     for e in entries:
                         cal_val = e["food_items"]["calories_per_100g"] * e["amount_grams"] / 100.0
                         st.write(f"• **{e['food_items']['name']}** ({e['amount_grams']} גרם): **+{round(cal_val, 1)}** קלוריות")
-                if st.button("סגור צד אחורי ✕", key="close_flip_cal"):
+                if st.button("סגור כרטיס ✕", key="close_flip_cal"):
                     st.session_state["flipped_card"] = None
                     st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
