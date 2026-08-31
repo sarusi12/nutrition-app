@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 import urllib.parse
-from datetime import date
+from datetime import date, datetime
 from supabase import create_client, Client
 
 # --- Streamlit Page Config ---
@@ -55,6 +55,8 @@ TRANSLATIONS = {
         "carbs": "פחמימות",
         "fat": "שומן",
         "settings_header": "⚙️ הגדרות פרופיל ופרטי חשבון",
+        "theme_label": "מצב תצוגה (Theme)",
+        "theme_options": ["אוטומטי (לפי השעה/מערכת)", "מצב כהה (Dark)", "מצב בהיר (Light)"],
         "save_settings": "שמור שינויים בפרופיל",
         "account_update": "🔐 עדכון פרטי חשבון (אימייל וסיסמה)",
         "new_email": "אימייל חדש",
@@ -107,6 +109,8 @@ TRANSLATIONS = {
         "carbs": "Carbs",
         "fat": "Fat",
         "settings_header": "⚙️ Profile & Account Settings",
+        "theme_label": "Display Theme",
+        "theme_options": ["Automatic (Time/System based)", "Dark Mode", "Light Mode"],
         "save_settings": "Save Profile Changes",
         "account_update": "🔐 Account Update (Email & Password)",
         "new_email": "New Email",
@@ -115,7 +119,7 @@ TRANSLATIONS = {
     }
 }
 
-# Language state selection in sidebar or session
+# Language state selection
 if "lang" not in st.session_state:
     st.session_state["lang"] = "עברית (Hebrew)"
 
@@ -124,46 +128,64 @@ st.session_state["lang"] = selected_lang
 t = TRANSLATIONS[selected_lang]
 direction = t["dir"]
 
-# --- iOS 27 Inspired Glassmorphism & Adaptive Styling ---
+# Theme state selection
+if "theme_mode" not in st.session_state:
+    st.session_state["theme_mode"] = "אוטומטי (לפי השעה/מערכת)"
+
+# Determine if it's currently dark or light based on time/setting
+current_hour = datetime.now().hour
+is_automatic_dark = (current_hour < 6 or current_hour >= 19) # Dark between 19:00 and 06:00
+
+mode = st.session_state["theme_mode"]
+if "כהה" in mode or "Dark" in mode:
+    is_dark = True
+elif "בהיר" in mode or "Light" in mode:
+    is_dark = False
+else:
+    is_dark = is_automatic_dark
+
+# iOS 27 Inspired Glassmorphism with Dynamic Colors (Dark vs Light)
+bg_color = "#0e1117" if is_dark else "#f8f9fa"
+text_color = "#ffffff" if is_dark else "#111111"
+widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
+widget_border = "rgba(255, 255, 255, 0.1)" if is_dark else "rgba(0, 0, 0, 0.08)"
+
 st.markdown(
     f"""
     <style>
-    /* Global Direction & Font */
     html, body, [data-testid="stAppViewContainer"] {{
         direction: {direction};
         text-align: {'right' if direction == 'rtl' else 'left'};
-        background-color: #0e1117;
+        background-color: {bg_color};
+        color: {text_color};
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }}
     
-    /* iOS Widget Style Cards */
     .ios-widget {{
-        background: rgba(255, 255, 255, 0.05);
+        background: {widget_bg};
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid {widget_border};
         border-radius: 20px;
         padding: 20px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
         margin-bottom: 15px;
         transition: transform 0.2s ease;
     }}
     .ios-widget:hover {{
         transform: translateY(-2px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
     }}
     
-    /* Tabs Customization */
     .stTabs [data-baseweb="tab-list"] {{
         gap: 8px;
-        background-color: rgba(255, 255, 255, 0.02);
+        background-color: {widget_bg};
         padding: 6px;
         border-radius: 16px;
     }}
     .stTabs [data-baseweb="tab"] {{
         border-radius: 12px;
         padding: 10px 16px;
-        color: #ffffff;
+        color: {text_color};
     }}
     </style>
     """,
@@ -451,9 +473,14 @@ with tab_settings:
         s_age = st.number_input(t["age"], min_value=12, max_value=120, value=int(profile_data.get("age", 30)))
         s_height = st.number_input(t["height"], min_value=100.0, max_value=230.0, value=float(profile_data.get("height", 175.0)))
         s_weight = st.number_input(t["weight"], min_value=30.0, max_value=250.0, value=float(profile_data.get("weight", 75.0)))
+        
+        # Theme Selector Setting
+        theme_choice = st.selectbox(t["theme_label"], t["theme_options"], index=t["theme_options"].index(st.session_state["theme_mode"]) if st.session_state["theme_mode"] in t["theme_options"] else 0)
+        
         submit_settings = st.form_submit_button(t["save_settings"])
         
         if submit_settings:
+            st.session_state["theme_mode"] = theme_choice
             supabase.table("user_profiles").update({
                 "age": int(s_age), "height": float(s_height), "weight": float(s_weight)
             }).eq("user_id", user_id).execute()
