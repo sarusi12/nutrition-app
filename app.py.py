@@ -196,7 +196,6 @@ st.markdown(
         color: {text_color} !important;
     }}
 
-    /* תיקון מוחלט לכל תיבות הטקסט, הבחירה, תאריכים ומספרים בכל הלשוניות */
     input, textarea, select, div[data-baseweb="select"] > div, div[data-baseweb="input"] > div,
     div[data-baseweb="base-input"] > div, div[data-baseweb="datepicker"] > div {{
         background-color: {input_bg_color} !important;
@@ -205,7 +204,6 @@ st.markdown(
         border-color: {widget_border} !important;
     }}
 
-    /* תיקון גורף לכל תיבות בחירת התאריך (Date Inputs) בכל הלשוניות */
     div[data-baseweb="datepicker"], div[data-baseweb="input"], .stDateInput, 
     div[aria-label*="בחר תאריך"], div[aria-label*="Date"], div[aria-label*="תאריך"],
     input[type="date"], input[type="text"], input[type="number"], .stDateInput input, div[data-baseweb="datepicker"] input {{
@@ -214,7 +212,6 @@ st.markdown(
         -webkit-text-fill-color: {input_text_color} !important;
     }}
 
-    /* תיקון יסודי ומוחלט לכפתור ואזור העלאת תבניות/תמונות (File Uploader) - מניעת הלבן והחלפת צבע בריחוף */
     div[data-testid="stFileUploader"], section[data-testid="stFileUploaderDropzone"],
     div[data-testid="stFileUploader"] *, section[data-testid="stFileUploaderDropzone"] * {{
         background-color: {input_bg_color} !important;
@@ -222,13 +219,11 @@ st.markdown(
         border-color: {widget_border} !important;
     }}
     
-    /* מניעת שינוי צבע לבן או רקע בהיר בתוך אזור הגרירה וההעלאה של קבצים */
     div[data-testid="stFileUploader"] div, section[data-testid="stFileUploaderDropzone"] div {{
         background-color: {input_bg_color} !important;
         color: {input_text_color} !important;
     }}
 
-    /* כפתור "Browse files" בתוך אזור ההעלאה */
     div[data-testid="stFileUploader"] button, section[data-testid="stFileUploaderDropzone"] button {{
         background-color: rgba(0, 122, 255, 0.25) !important;
         color: #ffffff !important;
@@ -241,7 +236,6 @@ st.markdown(
         color: #ffffff !important;
     }}
 
-    /* תיקון גורף לכל פופאפ, לוח שנה, תפריט נפתח (Selectbox Dropdown) ושכבות תפריט */
     div[data-baseweb="popover"], div[data-baseweb="calendar"], div[data-baseweb="menu"], 
     div[role="dialog"], div[role="application"], ul[data-baseweb="menu"], div[role="listbox"] {{
         background-color: {input_bg_color} !important;
@@ -250,7 +244,6 @@ st.markdown(
         border-radius: 14px !important;
     }}
 
-    /* הבטחה שכל הטקסטים והאלמנטים בתוך הפופאפים והתפריטים הנפתחים יהיו לבנים וקריאים */
     div[data-baseweb="popover"] *, div[data-baseweb="calendar"] *, div[data-baseweb="menu"] *, 
     div[role="dialog"] *, div[role="application"] *, ul[data-baseweb="menu"] *, div[role="listbox"] *,
     div[data-baseweb="datepicker"] * {{
@@ -258,7 +251,6 @@ st.markdown(
         background-color: transparent !important;
     }}
 
-    /* פריטי תפריט נפתח (Options) בריחוף או רגילים */
     ul[data-baseweb="menu"] li, li[role="option"], div[role="option"] {{
         color: {input_text_color} !important;
         background-color: {input_bg_color} !important;
@@ -280,7 +272,6 @@ st.markdown(
         background-color: rgba(0, 122, 255, 0.3) !important;
     }}
 
-    /* תיקון ספציפי לטקסט בתוך שדות בחירה ותאריכים */
     div[data-baseweb="select"] span, div[data-baseweb="select"] div, div[data-baseweb="input"] input, 
     div[data-baseweb="datepicker"] input {{
         color: {input_text_color} !important;
@@ -303,7 +294,6 @@ st.markdown(
         direction: {dir_val} !important;
     }}
 
-    /* תיקון מלא ללשוניות הארוחות וגרפים (Expanders) במצב לילה */
     div[data-testid="stExpander"], details[data-testid="stExpander"] {{
         background-color: {input_bg_color} !important;
         border: 1px solid {widget_border} !important;
@@ -320,7 +310,6 @@ st.markdown(
         color: {text_color} !important;
     }}
 
-    /* עיצוב אחיד ויציב לכפתורים - קבוע ויציב עם תגובה חלקה ואחידה */
     div.stButton > button, div[data-testid="stFormSubmitButton"] > button {{
         background-color: rgba(0, 122, 255, 0.2) !important;
         color: {text_color} !important;
@@ -734,13 +723,16 @@ def safe_food_totals(entries):
         f += (fi.get("fat_per_100g", 0) or 0) * amt / 100.0
     return cal, p, c, f
 
-def get_anthropic_client():
-    api_key = st.secrets.get("ANTHROPIC_API_KEY", None)
+# --- Google Gemini AI Integration (แทนที่ Claude) ---
+def get_gemini_client():
+    # תומך בחיפוש מפתח תחת GOOGLE_API_KEY או GEMINI_API_KEY
+    api_key = st.secrets.get("GOOGLE_API_KEY", st.secrets.get("GEMINI_API_KEY", None))
     if not api_key:
         return None
     try:
-        import anthropic
-        return anthropic.Anthropic(api_key=api_key)
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        return genai
     except Exception:
         return None
 
@@ -1313,10 +1305,10 @@ elif selected_tab == t["tab_history"]:
         """, unsafe_allow_html=True)
 
 elif selected_tab == t["tab_camera"]:
-    st.subheader("📸 סריקת תמונה (זיהוי מזון בעזרת AI)")
-    ai_client = get_anthropic_client()
-    if not ai_client:
-        st.warning("⚠️ זיהוי תמונות AI לא מוגדר. יש להוסיף ANTHROPIC_API_KEY לקובץ secrets.toml כדי להפעיל את הפיצ'ר בפועל.")
+    st.subheader("📸 סריקת תמונה (זיהוי מזון בעזרת Google Gemini)")
+    gemini_client = get_gemini_client()
+    if not gemini_client:
+        st.warning("⚠️ מפתח Google API לא מוגדר. כדי להפעיל את סריקת התמונות, הוסף GOOGLE_API_KEY לקובץ secrets.toml (או לחלופין השתמש בחיפוש הידני).")
 
     uploaded_file = st.file_uploader("בחר תמונה", type=["jpg", "jpeg", "png"])
     meal_type_img = st.selectbox(t["meal_type"], [t["breakfast"], t["lunch"], t["dinner"], t["snack"]], key="img_meal")
@@ -1324,40 +1316,30 @@ elif selected_tab == t["tab_camera"]:
     if uploaded_file is not None:
         st.image(uploaded_file, width=300)
         if st.button("זהה רכיבים והוסף ליומן"):
-            if not ai_client:
-                st.error("לא ניתן לזהות את התמונה - חסר מפתח API. פנה להגדרות המערכת.")
+            if not gemini_client:
+                st.error("לא ניתן לזהות את התמונה - חסר מפתח Google API.")
             else:
-                with st.spinner("מזהה את תוכן הצלחת..."):
+                with st.spinner("מזהה את תוכן הצלחת בעזרת Gemini..."):
                     try:
-                        import base64
-                        img_bytes = uploaded_file.getvalue()
-                        img_b64 = base64.b64encode(img_bytes).decode("utf-8")
-                        media_type = uploaded_file.type or "image/jpeg"
-
-                        response = ai_client.messages.create(
-                            model="claude-sonnet-4-6",
-                            max_tokens=500,
-                            messages=[{
-                                "role": "user",
-                                "content": [
-                                    {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": img_b64}},
-                                    {"type": "text", "text": (
-                                        "זהה את המזון בתמונה והערך את הערכים התזונתיים הכוללים למנה. "
-                                        "החזר אך ורק אובייקט JSON תקני (ללא טקסט נוסף, ללא markdown) בפורמט: "
-                                        '{"name": "<שם המזון בעברית>", "estimated_grams": <מספר>, '
-                                        '"cal": <קלוריות ל-100 גרם>, "p": <חלבון ל-100 גרם>, '
-                                        '"c": <פחמימות ל-100 גרם>, "f": <שומן ל-100 גרם>}'
-                                    )}
-                                ]
-                            }]
+                        from PIL import Image
+                        image_obj = Image.open(uploaded_file)
+                        
+                        model = gemini_client.GenerativeModel('gemini-2.5-flash')
+                        prompt = (
+                            "זהה את המזון בתמונה והערך את הערכים התזונתיים הכוללים למנה. "
+                            "החזר אך ורק אובייקט JSON תקני (ללא טקסט נוסף, ללא markdown) בפורמט: "
+                            '{"name": "<שם המזון בעברית>", "estimated_grams": <מספר>, '
+                            '"cal": <קלוריות ל-100 גרם>, "p": <חלבון ל-100 גרם>, '
+                            '"c": <פחמימות ל-100 גרם>, "f": <שומן ל-100 גרם>}'
                         )
-                        raw_text = "".join(b.text for b in response.content if getattr(b, "type", "") == "text")
+                        response = model.generate_content([prompt, image_obj])
+                        raw_text = response.text
                         clean_text = raw_text.replace("```json", "").replace("```", "").strip()
                         import json
                         parsed = json.loads(clean_text)
 
                         data = {
-                            "name": f"{parsed['name']} (זוהה ע\"י AI)",
+                            "name": f"{parsed['name']} (זוהה ע\"י Gemini)",
                             "cal": float(parsed.get("cal", 0)),
                             "p": float(parsed.get("p", 0)),
                             "c": float(parsed.get("c", 0)),
@@ -1514,17 +1496,17 @@ elif selected_tab == t["tab_log"]:
         st.info("No logs for today.")
 
 elif selected_tab == t["tab_ai"]:
-    st.subheader("🤖 יועץ תזונה AI")
-    ai_client = get_anthropic_client()
-    if not ai_client:
-        st.warning("⚠️ יועץ ה-AI לא מוגדר. יש להוסיף ANTHROPIC_API_KEY לקובץ secrets.toml כדי להפעיל את הפיצ'ר בפועל.")
+    st.subheader("🤖 יועץ תזונה AI (Google Gemini)")
+    gemini_client = get_gemini_client()
+    if not gemini_client:
+        st.warning("⚠️ יועץ ה-AI אינו מוגדר. הוסף GOOGLE_API_KEY לקובץ secrets.toml כדי להפעיל את היועץ.")
 
     user_query = st.text_area("שאל כל שאלה בנוגע לתזונה, האימונים או ההתקדמות שלך:")
     if st.button("שלח שאלה"):
         if not user_query.strip():
             st.warning("נא להקליד שאלה.")
-        elif not ai_client:
-            st.error("לא ניתן לענות כרגע - חסר מפתח API. פנה להגדרות המערכת.")
+        elif not gemini_client:
+            st.error("לא ניתן לענות כרגע - חסר מפתח Google API.")
         else:
             with st.spinner("חושב..."):
                 try:
@@ -1538,14 +1520,10 @@ elif selected_tab == t["tab_ai"]:
                         f"שומן: {round(ctx_f)}g מתוך יעד {user_goals['target_fat']}g. "
                         f"פרופיל: גיל {profile_data.get('age')}, משקל {profile_data.get('weight')} ק\"ג, מטרה: {profile_data.get('goal')}."
                     )
-                    response = ai_client.messages.create(
-                        model="claude-sonnet-4-6",
-                        max_tokens=600,
-                        system="אתה יועץ תזונה ואימונים ידידותי. ענה בעברית, בקצרה ובאופן מעשי, בהתבסס על הנתונים שסופקו. אל תיתן ייעוץ רפואי.",
-                        messages=[{"role": "user", "content": f"{context_str}\n\nשאלת המשתמש: {user_query}"}]
-                    )
-                    answer_text = "".join(b.text for b in response.content if getattr(b, "type", "") == "text")
-                    st.markdown(f"### 💡 תשובת היועץ\n{answer_text}")
+                    model = gemini_client.GenerativeModel('gemini-2.5-flash')
+                    full_prompt = f"אתה יועץ תזונה ואימונים ידידותי. ענה בעברית, בקצרה ובאופן מעשי, בהתבסס על הנתונים הבאים. אל תיתן ייעוץ רפואי.\n\n{context_str}\n\nשאלת המשתמש: {user_query}"
+                    response = model.generate_content(full_prompt)
+                    st.markdown(f"### 💡 תשובת היועץ\n{response.text}")
                 except Exception as e:
                     st.error(f"שגיאה בפנייה ליועץ ה-AI: {e}")
 
