@@ -172,7 +172,7 @@ text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
 widget_border = "rgba(255, 255, 255, 0.15)" if is_dark else "rgba(0, 0, 0, 0.08)"
 
-# כיוון טקסט דינמי לפי השפה הנבחרת (במקום RTL קבוע שהיה שובר את מצב האנגלית)
+# כיוון טקסט דינמי לפי השפה הנבחרת
 is_rtl = "Hebrew" in selected_lang or "עברית" in selected_lang
 dir_val = "rtl" if is_rtl else "ltr"
 text_align_val = "right" if is_rtl else "left"
@@ -242,9 +242,6 @@ st.markdown(
         flex-shrink: 0;
     }}
 
-    /* התיקון המרכזי: הלשונית הפעילה/נבחרת מקבלת מ-baseweb רקע בהיר כברירת
-       מחדל, וזה מה שגרם לטקסט לבן להיעלם עליו במצב לילה. נותנים לה רקע
-       מפורש שמתאים לתמה הנוכחית + טקסט מודגש עם ניגודיות גבוהה. */
     .stTabs [data-baseweb="tab"][aria-selected="true"] {{
         background-color: rgba(10, 132, 255, 0.22) !important;
         color: {text_color} !important;
@@ -255,10 +252,7 @@ st.markdown(
         color: inherit !important;
     }}
 
-    /* תפריטי בחירה נפתחים (selectbox / multiselect) מוצגים ע"י Streamlit
-       דרך "portal" מחוץ למבנה הרגיל של האפליקציה, ולכן ה-CSS הרגיל שלנו
-       לא תמיד מגיע אליהם ונשאר רקע בהיר של ברירת המחדל -> טקסט לבן על
-       רקע בהיר = בלתי קריא. מכסים אותם במפורש כאן. */
+    /* תיקון קריטי לתפריטי בחירה נפתחים (Selectbox / Dropdown) במצב לילה */
     ul[data-baseweb="menu"],
     div[data-baseweb="popover"] {{
         background-color: {bg_color} !important;
@@ -273,6 +267,7 @@ st.markdown(
     li[role="option"]:hover,
     li[aria-selected="true"] {{
         background-color: {widget_bg} !important;
+        color: {text_color} !important;
     }}
 
     .ios-widget {{
@@ -374,7 +369,6 @@ st.markdown(
         color: {text_color} !important;
     }}
 
-    /* התאמה אבסולוטית למובייל למניעת גלילה אופקית ויישור רכיבים */
     @media screen and (max-width: 768px) {{
         .row-widget.stHorizontal {{
             -webkit-box-orient: vertical !important;
@@ -632,9 +626,7 @@ def get_unit_options(item_name):
         
     if any(k in item_name for k in ["חזה עוף", "שניצל", "סלמון", "סטייק", "פרגיות", "בקר", "דניס", "מושט", "בקלה", "שרימפס"]):
         return ["גרם", "יחידות"], 0
-
-    # פריטים לא מזוהים (למשל אגוזים, שמנים, זרעים) - ברירת מחדל בטוחה בגרם/כפות בלבד,
-    # בלי "יחידות" שיגרור חישוב שגוי (כמו 100 גרם ל"יחידת" אגוז).
+        
     return ["גרם", "כפות"], 0
 
 def calc_grams(item_name, unit, raw_amount):
@@ -700,9 +692,6 @@ def fetch_nutrition_data(query):
     return None
 
 def get_or_create_food_item(user_id, data):
-    """מחפש פריט מזון קיים למשתמש, ואם אין - יוצר אותו. שימו לב: ליצירת
-    constraint ייחודי על (user_id, name) בטבלה מומלץ כדי למנוע כפילויות
-    במקרה של קריאות מקבילות."""
     item_name = data["name"]
     existing = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", item_name).execute()
     if existing.data:
@@ -715,8 +704,6 @@ def get_or_create_food_item(user_id, data):
     return created.data[0]["id"]
 
 def safe_food_totals(entries):
-    """מחשב סכומי קלוריות/מאקרו מרשימת רשומות food_log, תוך התעלמות
-    בטוחה מרשומות שבהן food_items חסר (למשל פריט שנמחק)."""
     cal = p = c = f = 0.0
     for e in entries:
         fi = e.get("food_items")
@@ -730,9 +717,6 @@ def safe_food_totals(entries):
     return cal, p, c, f
 
 def get_anthropic_client():
-    """מחזיר קליינט Anthropic אם מוגדר מפתח API בסודות (st.secrets),
-    אחרת None. כדי להפעיל את יועץ ה-AI ואת סריקת התמונה בפועל, יש
-    להוסיף ANTHROPIC_API_KEY לקובץ secrets.toml."""
     api_key = st.secrets.get("ANTHROPIC_API_KEY", None)
     if not api_key:
         return None
@@ -754,10 +738,6 @@ def login_user(email, password, remember_me=True):
     try:
         res = supabase.auth.sign_in_with_password({"email": email, "password": password})
         st.session_state["user"] = res.user
-        # remember_me: ה-SDK של supabase-py שומר את הסשן אוטומטית בפועל דרך
-        # ה-storage המוגדר; אין כרגע לוגיקה נפרדת ל"אל תזכור אותי" (למשל
-        # ניקוי session storage בסוף), ולכן הצ'קבוקס לא משפיע בפועל.
-        # אם רוצים אכיפה אמיתית - יש לשלוט בזה ברמת ה-storage שמוזרק ל-create_client.
         st.success("התחברת בהצלחה!")
         st.rerun()
     except Exception as e:
@@ -1086,8 +1066,6 @@ with tab_workouts:
     st.markdown("<br>", unsafe_allow_html=True)
     
     if st.button(t["add_workout_btn"], use_container_width=True):
-        # הערה: אם השורה הבאה נכשלת עם שגיאת עמודה חסרה, יש להריץ במסד הנתונים:
-        # ALTER TABLE workouts ADD COLUMN total_calories INTEGER;
         try:
             supabase.table("workouts").insert({
                 "user_id": user_id,
@@ -1100,7 +1078,7 @@ with tab_workouts:
             st.success("האימון נוסף בהצלחה!")
             st.rerun()
         except Exception as e:
-            st.error(f"שגיאה בהוספת האימון: {e}. ייתכן שחסרה עמודת total_calories בטבלת workouts - יש להריץ מיגרציה במסד הנתונים.")
+            st.error(f"שגיאה בהוספת האימון: {e}")
 
     st.divider()
     st.subheader("📋 אימונים מתועדים לתאריך הנבחר")
@@ -1140,8 +1118,6 @@ with tab_photos:
                 p_date_str = photo_date.strftime("%Y-%m-%d")
                 bytes_data = photo_file.getvalue()
                 stored_url = None
-                # ניסיון ראשון: אחסון אמיתי ב-Supabase Storage (bucket בשם "progress-photos"),
-                # יעיל בהרבה מאחסון base64 בתוך טבלת ה-DB.
                 try:
                     file_ext = photo_file.name.split(".")[-1] if "." in photo_file.name else "jpg"
                     storage_path = f"{user_id}/{p_date_str}_{photo_file.name}"
@@ -1151,8 +1127,6 @@ with tab_photos:
                     )
                     stored_url = supabase.storage.from_("progress-photos").get_public_url(storage_path)
                 except Exception:
-                    # Fallback: אם ה-bucket לא קיים/לא מוגדר, נשמור base64 כמו קודם
-                    # (לא אידיאלי לטווח ארוך - מומלץ ליצור bucket בשם progress-photos ב-Supabase).
                     import base64
                     base64_str = base64.b64encode(bytes_data).decode("utf-8")
                     stored_url = f"data:image/jpeg;base64,{base64_str}"
@@ -1523,7 +1497,6 @@ with tab_ai:
         else:
             with st.spinner("חושב..."):
                 try:
-                    # מקבץ הקשר אמיתי מהיום הנבחר כדי שהתשובה תהיה מבוססת נתונים אמיתיים
                     ctx_log = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute().data
                     ctx_cal, ctx_p, ctx_c, ctx_f = safe_food_totals(ctx_log)
                     context_str = (
@@ -1589,4 +1562,3 @@ with tab_settings:
                     st.error(f"Error updating account: {e}")
             else:
                 st.info("No changes made.")
-
