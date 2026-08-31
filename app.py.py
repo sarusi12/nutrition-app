@@ -449,7 +449,6 @@ with tab_auto_add:
     # זיהוי סוג המאכל כדי להתאים את יחידות המידה בצורה חכמה
     active_search_name = custom_search.strip() if custom_search.strip() else (selected_from_db if selected_from_db != "-- בחר מאכל מהרשימה (הקלד לסינון) --" else "")
     
-    # התאמת יחידות לפי סוג המזון
     if any(k in active_search_name for k in ["אורז", "פסטה", "קוסקוס", "בורגול", "קינואה", "כוסמת", "שיבולת שועל"]):
         unit_options = ["גרם", "כפות", "כפיות"]
     elif any(k in active_search_name for k in ["טונה", "קוטג'", "גבינה", "יוגורט", "חלב"]):
@@ -467,27 +466,27 @@ with tab_auto_add:
 
     # המרת הכמות לגרמים לצורך חישוב תזונתי מדויק מאחורי הקלעים
     if chosen_unit == "כפות":
-        amount_input = raw_amount * 15.0  # כף סטנדרטית מכילה כ-15 גרם
+        amount_input = raw_amount * 15.0
     elif chosen_unit == "כפיות":
-        amount_input = raw_amount * 5.0   # כפית סטנדרטית מכילה כ-5 גרם
+        amount_input = raw_amount * 5.0
     elif chosen_unit == "קופסה / יחידה":
         if "טונה" in active_search_name:
-            amount_input = raw_amount * 112.0 # קופסת טונה סטנדרטית מסוננת
+            amount_input = raw_amount * 112.0
         elif "קוטג'" in active_search_name or "גבינה" in active_search_name:
-            amount_input = raw_amount * 250.0 # גביע קוטג' / גבינה סטנדרטי
+            amount_input = raw_amount * 250.0
         else:
             amount_input = raw_amount * 100.0
     elif chosen_unit == "יחידות":
         if "ביצה" in active_search_name:
-            amount_input = raw_amount * 50.0  # ביצה ממוצעת שוקלת כ-50 גרם
+            amount_input = raw_amount * 50.0
         elif any(k in active_search_name for k in ["בננה", "תפוח", "תפוז", "אגס"]):
-            amount_input = raw_amount * 120.0 # פרי ממוצע שוקל כ-120 גרם
+            amount_input = raw_amount * 120.0
         elif "עגבנייה" in active_search_name or "מלפפון" in active_search_name:
-            amount_input = raw_amount * 100.0 # ירק בינוני שוקל כ-100 גרם
+            amount_input = raw_amount * 100.0
         else:
             amount_input = raw_amount * 100.0
     else:
-        amount_input = raw_amount # גרמים רגילים
+        amount_input = raw_amount
 
     meal_type_sel = st.selectbox(t["meal_type"], [t["breakfast"], t["lunch"], t["dinner"], t["snack"]])
 
@@ -576,7 +575,7 @@ with tab_camera:
             st.success("הארוחה נוספה!")
             st.rerun()
 
-# --- מסך יומן אכילה ראשי ---
+# --- מסך יומן אכילה ראשי עם אפשרות עריכת כמות ומחיקה ---
 with tab_log:
     st.subheader(f"תיעוד ארוחות לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
@@ -651,12 +650,36 @@ with tab_log:
                 if meal_items:
                     for e in meal_items:
                         food_item = e["food_items"]
-                        c_food, c_amt, c_del = st.columns([4, 2, 1])
+                        
+                        # מצב עריכה לכל פריט בנפרד לפי מזהה
+                        edit_key_state = f"editing_{e['id']}"
+                        if edit_key_state not in st.session_state:
+                            st.session_state[edit_key_state] = False
+
+                        c_food, c_amt, c_edit, c_del = st.columns([3, 2, 1, 1])
                         c_food.write(f"• {food_item['name']}")
                         c_amt.write(f"{e['amount_grams']} גרם")
+                        
+                        if c_edit.button("✏️", key=f"edit_btn_{e['id']}"):
+                            st.session_state[edit_key_state] = not st.session_state[edit_key_state]
+                            st.rerun()
+                            
                         if c_del.button("🗑️", key=f"del_exp_{e['id']}"):
                             supabase.table("food_log").delete().eq("id", e["id"]).execute()
+                            if edit_key_state in st.session_state:
+                                del st.session_state[edit_key_state]
                             st.rerun()
+
+                        # אם המשתמש לחץ על כפתור עריכה, הצג שדה עדכון כמות קטן מתחת
+                        if st.session_state[edit_key_state]:
+                            with st.form(key=f"form_edit_{e['id']}"):
+                                new_amt = st.number_input("עדכן כמות חדשה (בגרמים):", min_value=1.0, value=float(e['amount_grams']), step=10.0)
+                                submitted_edit = st.form_submit_button("שמור שינוי")
+                                if submitted_edit:
+                                    supabase.table("food_log").update({"amount_grams": new_amt}).eq("id", e['id']).execute()
+                                    st.session_state[edit_key_state] = False
+                                    st.success("הכמות עודכנה בהצלחה!")
+                                    st.rerun()
                 else:
                     st.info("אין מאכלים בארוחה זו.")
     else:
