@@ -444,81 +444,122 @@ user_goals = goals_res.data[0] if goals_res.data else {"target_calories": 2200, 
 tab_log, tab_auto_add, tab_workouts, tab_camera, tab_ai, tab_settings = st.tabs([t["tab_log"], t["tab_search"], t["tab_workouts"], t["tab_camera"], t["tab_ai"], t["tab_settings"]])
 
 with tab_auto_add:
-    st.subheader("🔍 חיפוש והוספת מאכל")
-    st.caption("הקלד אותיות בתיבת הבחירה למטה כדי לסנן אוטומטית מתוך מאגר המאכלים הענק שלנו:")
+    st.subheader("🔍 חיפוש והוספת מאכל או ארוחה שלמה")
+    
+    add_mode = st.radio("בחר אופן הוספה:", ["מאכל בודד", "🍽️ הוספת ארוחה שלמה בבת אחת"])
     
     food_options = ["-- בחר מאכל מהרשימה (הקלד לסינון) --"] + sorted(list(LOCAL_DATABASE.keys()))
-    selected_from_db = st.selectbox(t["search_food"], options=food_options, key="food_selectbox_autocomplete")
-    
-    custom_search = st.text_input("או הקלד שם מאכל אחר לחיפוש חופשי (אם לא נמצא ברשימה):", key="custom_food_input")
-    
-    # זיהוי סוג המאכל והגדרת ברירת מחדל חכמה (דיפולט)
-    active_search_name = custom_search.strip() if custom_search.strip() else (selected_from_db if selected_from_db != "-- בחר מאכל מהרשימה (הקלד לסינון) --" else "")
-    
-    if any(k in active_search_name for k in ["אורז", "פסטה", "קוסקוס", "בורגול", "קינואה", "כוסמת", "שיבולת שועל"]):
-        unit_options = ["כפות", "גרם", "כפיות"] # דיפולט: כפות
-    elif any(k in active_search_name for k in ["משקה חלבון", "תנובה", "יטבתה", "שטראוס"]):
-        unit_options = ["בקבוק / יחידה", "גרם"] # דיפולט: בקבוק / יחידה
-    elif any(k in active_search_name for k in ["טונה", "קוטג'", "גבינה", "יוגורט", "חלב", "אבקת חלבון"]):
-        unit_options = ["גרם", "בקבוק / יחידה", "כפות", "סקופ"]
-    elif any(k in active_search_name for k in ["עגבנייה", "מלפפון", "בננה", "תפוח", "תפוז", "אגס", "ביצה", "פיתה", "לחם"]):
-        unit_options = ["יחידות", "גרם"] # דיפולט: יחידות
-    else:
-        unit_options = ["גרם", "כפות", "יחידות"]
-
-    col_u1, col_u2 = st.columns(2)
-    with col_u1:
-        chosen_unit = st.selectbox(t["unit_type"], unit_options, key="food_unit_selection")
-    with col_u2:
-        default_val = 1.0 if chosen_unit in ["בקבוק / יחידה", "סקופ", "יחידות", "כפות"] else 100.0
-        raw_amount = st.number_input(t["amount_val"], min_value=0.1, value=default_val, step=1.0 if chosen_unit != "גרם" else 10.0)
-
-    # המרת הכמות לצורך חישוב תזונתי מדויק מאחורי הקלעים
-    if chosen_unit == "כפות":
-        amount_input = raw_amount * 15.0 # כף הגשה סטנדרטית מכילה כ-15 גרם
-    elif chosen_unit == "כפיות":
-        amount_input = raw_amount * 5.0
-    elif chosen_unit == "בקבוק / יחידה":
-        if "משקה חלבון" in active_search_name or "תנובה" in active_search_name or "יטבתה" in active_search_name or "שטראוס" in active_search_name:
-            amount_input = raw_amount * 250.0 # בקבוק משקה חלבון סטנדרטי הוא 250 מ"ל
-        elif "טונה" in active_search_name:
-            amount_input = raw_amount * 112.0
-        elif "קוטג'" in active_search_name or "גבינה" in active_search_name:
-            amount_input = raw_amount * 250.0
-        else:
-            amount_input = raw_amount * 100.0
-    elif chosen_unit == "סקופ":
-        amount_input = raw_amount * 30.0
-    elif chosen_unit == "יחידות":
-        if "ביצה" in active_search_name:
-            amount_input = raw_amount * 50.0
-        elif any(k in active_search_name for k in ["בננה", "תפוח", "תפוז", "אגס"]):
-            amount_input = raw_amount * 120.0
-        elif "עגבנייה" in active_search_name or "מלפפון" in active_search_name:
-            amount_input = raw_amount * 100.0
-        else:
-            amount_input = raw_amount * 100.0
-    else:
-        amount_input = raw_amount
-
     meal_type_sel = st.selectbox(t["meal_type"], [t["breakfast"], t["lunch"], t["dinner"], t["snack"]])
 
-    if st.button(t["add_btn"]):
-        search_q = active_search_name
-        if search_q:
-            data = fetch_nutrition_data(search_q)
-            if data:
-                item_name = data["name"]
-                existing = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", item_name).execute()
-                food_id = existing.data[0]["id"] if existing.data else supabase.table("food_items").insert({"user_id": user_id, "name": item_name, "calories_per_100g": data["cal"], "protein_per_100g": data["p"], "carbs_per_100g": data["c"], "fat_per_100g": data["f"]}).execute().data[0]["id"]
-
-                supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": food_id, "amount_grams": amount_input, "meal_type": meal_type_sel}).execute()
-                st.success(f"המאכל '{item_name}' ({raw_amount} {chosen_unit}) התווסף בהצלחה!")
-                st.rerun()
-            else:
-                st.error("לא נמצאו נתונים תזונתיים עבור מאכל זה.")
+    if add_mode == "מאכל בודד":
+        selected_from_db = st.selectbox(t["search_food"], options=food_options, key="food_selectbox_autocomplete")
+        custom_search = st.text_input("או הקלד שם מאכל אחר לחיפוש חופשי (אם לא נמצא ברשימה):", key="custom_food_input")
+        
+        active_search_name = custom_search.strip() if custom_search.strip() else (selected_from_db if selected_from_db != "-- בחר מאכל מהרשימה (הקלד לסינון) --" else "")
+        
+        if any(k in active_search_name for k in ["אורז", "פסטה", "קוסקוס", "בורגול", "קינואה", "כוסמת", "שיבולת שועל"]):
+            unit_options = ["כפות", "גרם", "כפיות"]
+        elif any(k in active_search_name for k in ["משקה חלבון", "תנובה", "יטבתה", "שטראוס"]):
+            unit_options = ["בקבוק / יחידה", "גרם"]
+        elif any(k in active_search_name for k in ["טונה", "קוטג'", "גבינה", "יוגורט", "חלב", "אבקת חלבון"]):
+            unit_options = ["גרם", "בקבוק / יחידה", "כפות", "סקופ"]
+        elif any(k in active_search_name for k in ["עגבנייה", "מלפפון", "בננה", "תפוח", "תפוז", "אגס", "ביצה", "פיתה", "לחם"]):
+            unit_options = ["יחידות", "גרם"]
         else:
-            st.warning("נא לבחור מאכל מהרשימה או להקליד חיפוש חופשי.")
+            unit_options = ["גרם", "כפות", "יחידות"]
+
+        col_u1, col_u2 = st.columns(2)
+        with col_u1:
+            chosen_unit = st.selectbox(t["unit_type"], unit_options, key="food_unit_selection")
+        with col_u2:
+            default_val = 1.0 if chosen_unit in ["בקבוק / יחידה", "סקופ", "יחידות", "כפות"] else 100.0
+            raw_amount = st.number_input(t["amount_val"], min_value=0.1, value=default_val, step=1.0 if chosen_unit != "גרם" else 10.0)
+
+        if chosen_unit == "כפות":
+            amount_input = raw_amount * 15.0
+        elif chosen_unit == "כפיות":
+            amount_input = raw_amount * 5.0
+        elif chosen_unit == "בקבוק / יחידה":
+            if "משקה חלבון" in active_search_name or "תנובה" in active_search_name or "יטבתה" in active_search_name or "שטראוס" in active_search_name:
+                amount_input = raw_amount * 250.0
+            elif "טונה" in active_search_name:
+                amount_input = raw_amount * 112.0
+            elif "קוטג'" in active_search_name or "גבינה" in active_search_name:
+                amount_input = raw_amount * 250.0
+            else:
+                amount_input = raw_amount * 100.0
+        elif chosen_unit == "סקופ":
+            amount_input = raw_amount * 30.0
+        elif chosen_unit == "יחידות":
+            if "ביצה" in active_search_name:
+                amount_input = raw_amount * 50.0
+            elif any(k in active_search_name for k in ["בננה", "תפוח", "תפוז", "אגס"]):
+                amount_input = raw_amount * 120.0
+            elif "עגבנייה" in active_search_name or "מלפפון" in active_search_name:
+                amount_input = raw_amount * 100.0
+            else:
+                amount_input = raw_amount * 100.0
+        else:
+            amount_input = raw_amount
+
+        if st.button(t["add_btn"]):
+            search_q = active_search_name
+            if search_q:
+                data = fetch_nutrition_data(search_q)
+                if data:
+                    item_name = data["name"]
+                    existing = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", item_name).execute()
+                    food_id = existing.data[0]["id"] if existing.data else supabase.table("food_items").insert({"user_id": user_id, "name": item_name, "calories_per_100g": data["cal"], "protein_per_100g": data["p"], "carbs_per_100g": data["c"], "fat_per_100g": data["f"]}).execute().data[0]["id"]
+
+                    supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": food_id, "amount_grams": amount_input, "meal_type": meal_type_sel}).execute()
+                    st.success(f"✅ הצלחה! המאכל '{item_name}' ({raw_amount} {chosen_unit}) התווסף בהצלחה לארוחת {meal_type_sel}.")
+                else:
+                    st.error("לא נמצאו נתונים תזונתיים עבור מאכל זה.")
+            else:
+                st.warning("נא לבחור מאכל מהרשימה או להקליד חיפוש חופשי.")
+
+    else:
+        st.info("בחר עד 4 מרכיבים שונים כדי להרכיב ארוחה שלמה ולהוסיף הכל בלחיצה אחת:")
+        
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            item1 = st.selectbox("רכיב 1", options=["-- ללא --"] + sorted(list(LOCAL_DATABASE.keys())), key="meal_item_1")
+            amt1 = st.number_input("כמות לרכיב 1 (גרם / כפות)", min_value=1.0, value=100.0, key="meal_amt_1")
+            
+            item2 = st.selectbox("רכיב 2", options=["-- ללא --"] + sorted(list(LOCAL_DATABASE.keys())), key="meal_item_2")
+            amt2 = st.number_input("כמות לרכיב 2 (גרם / כפות)", min_value=1.0, value=100.0, key="meal_amt_2")
+            
+        with col_m2:
+            item3 = st.selectbox("רכיב 3", options=["-- ללא --"] + sorted(list(LOCAL_DATABASE.keys())), key="meal_item_3")
+            amt3 = st.number_input("כמות לרכיב 3 (גרם / כפות)", min_value=1.0, value=100.0, key="meal_amt_3")
+            
+            item4 = st.selectbox("רכיב 4", options=["-- ללא --"] + sorted(list(LOCAL_DATABASE.keys())), key="meal_item_4")
+            amt4 = st.number_input("כמות לרכיב 4 (גרם / כפות)", min_value=1.0, value=100.0, key="meal_amt_4")
+
+        if st.button("🚀 הוסף את כל הארוחה ליומן"):
+            selected_items = [
+                (item1, amt1 if "כפות" not in item1 else amt1 * 15.0),
+                (item2, amt2 if "כפות" not in item2 else amt2 * 15.0),
+                (item3, amt3 if "כפות" not in item3 else amt3 * 15.0),
+                (item4, amt4 if "כפות" not in item4 else amt4 * 15.0)
+            ]
+            
+            added_count = 0
+            for item_name_sel, final_amt in selected_items:
+                if item_name_sel != "-- ללא --":
+                    data = fetch_nutrition_data(item_name_sel)
+                    if data:
+                        item_name = data["name"]
+                        existing = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", item_name).execute()
+                        food_id = existing.data[0]["id"] if existing.data else supabase.table("food_items").insert({"user_id": user_id, "name": item_name, "calories_per_100g": data["cal"], "protein_per_100g": data["p"], "carbs_per_100g": data["c"], "fat_per_100g": data["f"]}).execute().data[0]["id"]
+
+                        supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": food_id, "amount_grams": final_amt, "meal_type": meal_type_sel}).execute()
+                        added_count += 1
+                        
+            if added_count > 0:
+                st.success(f"✅ הצלחה! הארוחה המלאה הכוללת {added_count} רכיבים התוספה בהצלחה לארוחת {meal_type_sel}!")
+            else:
+                st.warning("נא לבחור לפחות מאכל אחד להוספה.")
 
 with tab_workouts:
     st.subheader(t["workouts_header"])
