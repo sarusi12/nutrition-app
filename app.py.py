@@ -368,7 +368,7 @@ selected_date = st.sidebar.date_input("בחר תאריך", date.today()).strftim
 goals_res = supabase.table("daily_goals").select("*").eq("user_id", user_id).eq("date", selected_date).execute()
 user_goals = goals_res.data[0] if goals_res.data else {"target_calories": 2200, "target_protein": 170, "target_carbs": 220, "target_fat": 60}
 
-# יצירת הלשוניות כולל לשונית האימונים החדשה
+# יצירת הלשוניות
 tab_log, tab_auto_add, tab_workouts, tab_camera, tab_ai, tab_settings = st.tabs([t["tab_log"], t["tab_search"], t["tab_workouts"], t["tab_camera"], t["tab_ai"], t["tab_settings"]])
 
 with tab_auto_add:
@@ -391,7 +391,7 @@ with tab_auto_add:
             else:
                 st.error("לא נמצאו נתונים תזונתיים.")
 
-# --- לשונית אימונים חדשה ---
+# --- לשונית אימונים ---
 with tab_workouts:
     st.subheader(t["workouts_header"])
     
@@ -399,8 +399,7 @@ with tab_workouts:
         w_type = st.selectbox(t["workout_type"], ["פאדל (Padel)", "חדר כושר / משקולות", "ריצה / אירובי", "כדורגל / ספורט קבוצתי", "אופניים", "שחייה", "אחר"])
         w_duration = st.number_input(t["workout_duration"], min_value=5, max_value=300, value=60, step=5)
         
-        # חישוב משוער חכם לקלוריות לפי סוג האימון ומשך הזמן
-        base_burn_rate = 8.0 # ברירת מחדל לדקות
+        base_burn_rate = 8.0
         if "משקולות" in w_type: base_burn_rate = 6.0
         elif "ריצה" in w_type: base_burn_rate = 11.0
         elif "פאדל" in w_type: base_burn_rate = 9.0
@@ -433,7 +432,7 @@ with tab_workouts:
     
     if workout_entries:
         total_workout_cals = sum(w["calories_burned"] for w in workout_entries)
-        st.info(סה"כ קלוריות שנשרפו באימונים היום: **{total_workout_cals} קלוריות** 🔥")
+        st.info(f"סה''כ קלוריות שנשרפו באימונים היום: **{total_workout_cals} קלוריות** 🔥")
         
         for w in workout_entries:
             c_type, c_dur, c_cals, c_del = st.columns([3, 2, 2, 1])
@@ -466,13 +465,11 @@ with tab_log:
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
     entries = log_res.data
     
-    # חישוב קלוריות ואבות גוף מהאוכל
     consumed_cal = sum(e["food_items"]["calories_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
     consumed_p = sum(e["food_items"]["protein_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
     consumed_c = sum(e["food_items"]["carbs_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
     consumed_f = sum(e["food_items"]["fat_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
 
-    # שליפת קלוריות שנשרפו באימונים עבור סיכום יומי משולב
     workouts_res_summary = supabase.table("workouts").select("calories_burned").eq("user_id", user_id).eq("date", selected_date).execute()
     total_burned_cals = sum(w["calories_burned"] for w in workouts_res_summary.data) if workouts_res_summary.data else 0
 
@@ -481,7 +478,6 @@ with tab_log:
     
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        net_calories = consumed_cal - total_burned_cals
         st.markdown(f"""
         <div class="ios-widget">
             <h4>🔥 {t['calories']}</h4>
