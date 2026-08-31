@@ -221,16 +221,16 @@ st.markdown(
     }}
 
     .ios-widget {{
-        background: linear-gradient(135deg, rgba(0, 122, 255, 0.06), rgba(88, 86, 214, 0.06));
+        background: {widget_bg};
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(0, 122, 255, 0.2);
+        border: 1px solid {widget_border};
         border-radius: 20px;
         padding: 20px 16px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.12);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
         margin-bottom: 14px;
         text-align: center;
-        min-height: 145px;
+        min-height: 140px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -242,7 +242,6 @@ st.markdown(
         font-size: 1.15em !important;
         margin: 0 0 8px 0 !important;
         font-weight: 600;
-        color: #007AFF;
     }}
 
     .ios-widget h2 {{
@@ -259,19 +258,16 @@ st.markdown(
         line-height: 1.4;
     }}
 
-    /* עיצוב כפתורי הוספת מים כך שיראו בדיוק כמו הווידג'טים וישבו ברווח אחיד */
-    .stButton > button {{
-        background: linear-gradient(135deg, rgba(0, 122, 255, 0.06), rgba(88, 86, 214, 0.06)) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border: 1px solid rgba(0, 122, 255, 0.2) !important;
-        border-radius: 20px !important;
+    /* עיצוב כפתורים ריבועיים תואמים למעקב מים */
+    div[data-testid="column"] div.stButton > button {{
+        background: linear-gradient(135deg, rgba(0, 122, 255, 0.08), rgba(88, 86, 214, 0.08)) !important;
+        border: 1px solid rgba(0, 122, 255, 0.25) !important;
+        border-radius: 16px !important;
         color: {text_color} !important;
-        height: 145px !important;
-        width: 100% !important;
+        height: 104px !important;
         font-weight: 700 !important;
-        font-size: 1.1em !important;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.12) !important;
+        font-size: 1.05em !important;
+        box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1) !important;
         display: flex !important;
         flex-direction: column !important;
         justify-content: center !important;
@@ -279,8 +275,8 @@ st.markdown(
         transition: all 0.2s ease-in-out !important;
     }}
     
-    .stButton > button:hover {{
-        border-color: rgba(0, 122, 255, 0.5) !important;
+    div[data-testid="column"] div.stButton > button:hover {{
+        border-color: rgba(0, 122, 255, 0.6) !important;
         transform: translateY(-2px);
     }}
 
@@ -304,8 +300,8 @@ st.markdown(
             min-width: unset !important;
             margin-bottom: 10px;
         }}
-        .stButton > button {{
-            height: 80px !important;
+        div[data-testid="column"] div.stButton > button {{
+            height: 60px !important;
         }}
     }}
     </style>
@@ -1098,7 +1094,7 @@ with tab_camera:
             st.success("הארוחה נוספה!")
             st.rerun()
 
-# --- מסך יומן אכילה ראשי (כולל מעקב מים מרובע ומושלם ב-5 עמודות שוות) ---
+# --- מסך יומן אכילה ראשי (כולל מעקב מים מרובע ומדויק) ---
 with tab_log:
     st.subheader(f"תיעוד ארוחות ושתייה לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
@@ -1117,13 +1113,13 @@ with tab_log:
 
     st.divider()
     
-    # --- שורת מים מושלמת: 5 וידג'טים ריבועיים תואמים באותו גודל ובאותו צבע בדיוק ---
+    # --- מעקב מים יומי בגודל ובצבע אחיד עם כפתורי ריבוע תואמים ---
     wc_info, wc_b1, wc_b2, wc_b3, wc_b4 = st.columns(5)
     
     with wc_info:
         st.markdown(f"""
-        <div class="ios-widget" style="margin-bottom: 0px;">
-            <h4>💧 מים יומי</h4>
+        <div class="ios-widget" style="background: linear-gradient(135deg, rgba(0, 122, 255, 0.08), rgba(88, 86, 214, 0.08)); border: 1px solid rgba(0, 122, 255, 0.25); margin-bottom: 0px;">
+            <h4 style="color: #007AFF;">💧 מים יומי</h4>
             <h2>{int(total_water_ml)}</h2>
             <p>מל' ({water_glasses} כוסות)</p>
         </div>
@@ -1137,30 +1133,30 @@ with tab_log:
         st.rerun()
 
     with wc_b1:
-        if st.button("➕ 250 מ\"ל\n\n(כוס)", key="w_btn_250"):
+        if st.button("➕ 250 מ\"ל\n\n(כוס)", use_container_width=True, key="w_btn_250"):
             add_water_to_log(250)
             
     with wc_b2:
-        if st.button("➕ 500 מ\"ל\n\n(בקבוק)", key="w_btn_500"):
+        if st.button("➕ 500 מ\"ל\n\n(בקבוק)", use_container_width=True, key="w_btn_500"):
             add_water_to_log(500)
             
     with wc_b3:
-        if st.button("➕ 1.5 ליטר\n\n(ענק)", key="w_btn_1500"):
+        if st.button("➕ 1.5 ליטר\n\n(ענק)", use_container_width=True, key="w_btn_1500"):
             add_water_to_log(1500)
             
     with wc_b4:
-        if st.button("⚙️ מותאם\n\nאישית", key="w_btn_custom_toggle"):
+        if st.button("⚙️ מותאם\n\nאישית", use_container_width=True, key="w_btn_custom_toggle"):
             st.session_state["show_custom_water"] = not st.session_state.get("show_custom_water", False)
             st.rerun()
 
     if st.session_state.get("show_custom_water", False):
-        st.markdown("<div style='background: rgba(0,122,255,0.05); padding: 16px; border-radius: 20px; border: 1px solid rgba(0,122,255,0.2); margin-top: 14px;'>", unsafe_allow_html=True)
+        st.markdown("<div style='background: rgba(0,122,255,0.05); padding: 12px; border-radius: 12px; border: 1px solid rgba(0,122,255,0.2); margin-top: 10px;'>", unsafe_allow_html=True)
         c_cust_1, c_cust_2 = st.columns([2, 1])
         with c_cust_1:
             custom_ml_val = st.number_input("הכנס כמות מים במיליליטר (מל'):", min_value=50, max_value=5000, value=300, step=50, key="custom_water_input_amount")
         with c_cust_2:
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("הוסף מים ליומן", key="save_custom_water_btn"):
+            if st.button("הוסף ליומן", use_container_width=True, key="save_custom_water_btn"):
                 add_water_to_log(custom_ml_val)
         st.markdown("</div>", unsafe_allow_html=True)
 
