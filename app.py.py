@@ -215,13 +215,35 @@ with tab_log:
     c3.metric("פחמימות", f"{round(consumed_c, 1)}g / {user_goals['target_carbs']}g", f"נותרו {round(user_goals['target_carbs'] - consumed_c, 1)}g")
     c4.metric("שומן", f"{round(consumed_f, 1)}g / {user_goals['target_fat']}g", f"נותרו {round(user_goals['target_fat'] - consumed_f, 1)}g")
 
+    st.divider()
     if entries:
         st.subheader("📋 פירוט ארוחות שנרשמו")
-        display_data = [{
-            "מאכל": e["food_items"]["name"],
-            "כמות (גרם)": e["amount_grams"],
-            "ארוחה": e["meal_type"],
-            "קלוריות": round(e["food_items"]["calories_per_100g"] * e["amount_grams"] / 100.0, 1),
-            "חלבון": round(e["food_items"]["protein_per_100g"] * e["amount_grams"] / 100.0, 1)
-        } for e in entries]
-        st.table(display_data)
+        
+        # כותרת הטבלה
+        cols = st.columns([3, 2, 2, 2, 2, 1])
+        cols[0].markdown("**מאכל**")
+        cols[1].markdown("**ארוחה**")
+        cols[2].markdown("**כמות (גרם)**")
+        cols[3].markdown("**קלוריות**")
+        cols[4].markdown("**חלבון (ג')**")
+        cols[5].markdown("**פעולה**")
+        
+        for e in entries:
+            food_item = e["food_items"]
+            cal_item = round(food_item["calories_per_100g"] * e["amount_grams"] / 100.0, 1)
+            prot_item = round(food_item["protein_per_100g"] * e["amount_grams"] / 100.0, 1)
+            
+            c_food, c_meal, c_amt, c_cal, c_p, c_del = st.columns([3, 2, 2, 2, 2, 1])
+            c_food.write(food_item["name"])
+            c_meal.write(e["meal_type"])
+            c_amt.write(f"{e['amount_grams']} ג'")
+            c_cal.write(f"{cal_item}")
+            c_p.write(f"{prot_item}")
+            
+            # לחצן מחיקה
+            if c_del.button("🗑️", key=f"del_{e['id']}"):
+                supabase.table("food_log").delete().eq("id", e["id"]).execute()
+                st.success(f"נמחק: {food_item['name']}")
+                st.rerun()
+    else:
+        st.info("עדיין לא נרשמו ארוחות ליום זה.")
