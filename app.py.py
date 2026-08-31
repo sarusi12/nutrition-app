@@ -172,6 +172,11 @@ text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
 widget_border = "rgba(255, 255, 255, 0.15)" if is_dark else "rgba(0, 0, 0, 0.08)"
 
+# כיוון טקסט דינמי לפי השפה הנבחרת (במקום RTL קבוע שהיה שובר את מצב האנגלית)
+is_rtl = "Hebrew" in selected_lang or "עברית" in selected_lang
+dir_val = "rtl" if is_rtl else "ltr"
+text_align_val = "right" if is_rtl else "left"
+
 # --- Ultimate Mobile & Dark Mode CSS Fixes ---
 st.markdown(
     f"""
@@ -180,8 +185,8 @@ st.markdown(
         background-color: {bg_color};
         color: {text_color};
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        direction: rtl;
-        text-align: right;
+        direction: {dir_val};
+        text-align: {text_align_val};
         -webkit-text-size-adjust: 100%;
         -ms-text-size-adjust: 100%;
     }}
@@ -210,11 +215,11 @@ st.markdown(
     }}
     
     div[data-testid="stSidebarNav"] {{
-        direction: rtl !important;
+        direction: {dir_val} !important;
     }}
 
     .stTabs [data-baseweb="tab-list"] {{
-        direction: rtl;
+        direction: {dir_val};
         gap: 6px;
         background-color: {widget_bg};
         padding: 6px;
@@ -330,8 +335,8 @@ st.markdown(
         background-color: {widget_bg} !important;
         border: 1px solid {widget_border} !important;
         border-radius: 14px !important;
-        direction: rtl !important;
-        text-align: right !important;
+        direction: {dir_val} !important;
+        text-align: {text_align_val} !important;
         font-size: 1.1em !important;
         font-weight: bold !important;
         color: {text_color} !important;
@@ -595,8 +600,10 @@ def get_unit_options(item_name):
         
     if any(k in item_name for k in ["חזה עוף", "שניצל", "סלמון", "סטייק", "פרגיות", "בקר", "דניס", "מושט", "בקלה", "שרימפס"]):
         return ["גרם", "יחידות"], 0
-        
-    return ["גרם", "כפות", "יחידות"], 0
+
+    # פריטים לא מזוהים (למשל אגוזים, שמנים, זרעים) - ברירת מחדל בטוחה בגרם/כפות בלבד,
+    # בלי "יחידות" שיגרור חישוב שגוי (כמו 100 גרם ל"יחידת" אגוז).
+    return ["גרם", "כפות"], 0
 
 def calc_grams(item_name, unit, raw_amount):
     if not item_name or item_name == "-- ללא --": return raw_amount
@@ -660,6 +667,49 @@ def fetch_nutrition_data(query):
         pass
     return None
 
+def get_or_create_food_item(user_id, data):
+    """מחפש פריט מזון קיים למשתמש, ואם אין - יוצר אותו. שימו לב: ליצירת
+    constraint ייחודי על (user_id, name) בטבלה מומלץ כדי למנוע כפילויות
+    במקרה של קריאות מקבילות."""
+    item_name = data["name"]
+    existing = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", item_name).execute()
+    if existing.data:
+        return existing.data[0]["id"]
+    created = supabase.table("food_items").insert({
+        "user_id": user_id, "name": item_name,
+        "calories_per_100g": data["cal"], "protein_per_100g": data["p"],
+        "carbs_per_100g": data["c"], "fat_per_100g": data["f"]
+    }).execute()
+    return created.data[0]["id"]
+
+def safe_food_totals(entries):
+    """מחשב סכומי קלוריות/מאקרו מרשימת רשומות food_log, תוך התעלמות
+    בטוחה מרשומות שבהן food_items חסר (למשל פריט שנמחק)."""
+    cal = p = c = f = 0.0
+    for e in entries:
+        fi = e.get("food_items")
+        if not fi:
+            continue
+        amt = e.get("amount_grams", 0) or 0
+        cal += (fi.get("calories_per_100g", 0) or 0) * amt / 100.0
+        p += (fi.get("protein_per_100g", 0) or 0) * amt / 100.0
+        c += (fi.get("carbs_per_100g", 0) or 0) * amt / 100.0
+        f += (fi.get("fat_per_100g", 0) or 0) * amt / 100.0
+    return cal, p, c, f
+
+def get_anthropic_client():
+    """מחזיר קליינט Anthropic אם מוגדר מפתח API בסודות (st.secrets),
+    אחרת None. כדי להפעיל את יועץ ה-AI ואת סריקת התמונה בפועל, יש
+    להוסיף ANTHROPIC_API_KEY לקובץ secrets.toml."""
+    api_key = st.secrets.get("ANTHROPIC_API_KEY", None)
+    if not api_key:
+        return None
+    try:
+        import anthropic
+        return anthropic.Anthropic(api_key=api_key)
+    except Exception:
+        return None
+
 # --- Persistent Auth Logic ---
 if "user" not in st.session_state:
     st.session_state["user"] = None
@@ -672,6 +722,10 @@ def login_user(email, password, remember_me=True):
     try:
         res = supabase.auth.sign_in_with_password({"email": email, "password": password})
         st.session_state["user"] = res.user
+        # remember_me: ה-SDK של supabase-py שומר את הסשן אוטומטית בפועל דרך
+        # ה-storage המוגדר; אין כרגע לוגיקה נפרדת ל"אל תזכור אותי" (למשל
+        # ניקוי session storage בסוף), ולכן הצ'קבוקס לא משפיע בפועל.
+        # אם רוצים אכיפה אמיתית - יש לשלוט בזה ברמת ה-storage שמוזרק ל-create_client.
         st.success("התחברת בהצלחה!")
         st.rerun()
     except Exception as e:
@@ -758,13 +812,19 @@ if not profile_data:
                 target_cal, target_p = tdee, weight * 1.8
                 
             target_f = weight * 0.9
-            target_c = (target_cal - (target_p * 4) - (target_f * 9)) / 4
+            target_c = max(0.0, (target_cal - (target_p * 4) - (target_f * 9)) / 4)
             
             today_str = date.today().strftime("%Y-%m-%d")
-            supabase.table("daily_goals").upsert({"user_id": user_id, "date": today_str, "target_calories": round(target_cal), "target_protein": round(target_p), "target_carbs": round(target_c), "target_fat": round(target_f)}).execute()
+            supabase.table("daily_goals").upsert(
+                {"user_id": user_id, "date": today_str, "target_calories": round(target_cal), "target_protein": round(target_p), "target_carbs": round(target_c), "target_fat": round(target_f)},
+                on_conflict="user_id,date"
+            ).execute()
             
             try:
-                supabase.table("weight_logs").insert({"user_id": user_id, "date": today_str, "weight": float(weight)}).execute()
+                supabase.table("weight_logs").upsert(
+                    {"user_id": user_id, "date": today_str, "weight": float(weight)},
+                    on_conflict="user_id,date"
+                ).execute()
             except Exception:
                 pass
                 
@@ -819,12 +879,9 @@ with tab_auto_add:
             if search_q:
                 data = fetch_nutrition_data(search_q)
                 if data:
-                    item_name = data["name"]
-                    existing = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", item_name).execute()
-                    food_id = existing.data[0]["id"] if existing.data else supabase.table("food_items").insert({"user_id": user_id, "name": item_name, "calories_per_100g": data["cal"], "protein_per_100g": data["p"], "carbs_per_100g": data["c"], "fat_per_100g": data["f"]}).execute().data[0]["id"]
-
+                    food_id = get_or_create_food_item(user_id, data)
                     supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": food_id, "amount_grams": amount_input, "meal_type": meal_type_sel}).execute()
-                    st.success(f"✅ הצלחה! הפריט '{item_name}' ({raw_amount} {chosen_unit}) התווסף בהצלחה!")
+                    st.success(f"✅ הצלחה! הפריט '{data['name']}' ({raw_amount} {chosen_unit}) התווסף בהצלחה!")
                 else:
                     st.error("לא נמצאו נתונים תזונתיים עבור פריט זה במאגר.")
             else:
@@ -867,10 +924,7 @@ with tab_auto_add:
                 if item_name_sel != "-- ללא --":
                     data = fetch_nutrition_data(item_name_sel)
                     if data:
-                        item_name = data["name"]
-                        existing = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", item_name).execute()
-                        food_id = existing.data[0]["id"] if existing.data else supabase.table("food_items").insert({"user_id": user_id, "name": item_name, "calories_per_100g": data["cal"], "protein_per_100g": data["p"], "carbs_per_100g": data["c"], "fat_per_100g": data["f"]}).execute().data[0]["id"]
-
+                        food_id = get_or_create_food_item(user_id, data)
                         supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": food_id, "amount_grams": final_amt, "meal_type": meal_type_sel}).execute()
                         added_count += 1
                         
@@ -891,15 +945,15 @@ with tab_water:
     log_res_water = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
     entries_water = log_res_water.data
     
-    water_entries_only = [e for e in entries_water if e["food_items"] and any(w in e["food_items"]["name"] for w in ["מים", "בקבוק מים"]) and "טחינה" not in e["food_items"]["name"]]
+    water_entries_only = [e for e in entries_water if e.get("food_items") and any(w in e["food_items"]["name"] for w in ["מים", "בקבוק מים"]) and "טחינה" not in e["food_items"]["name"]]
     
     total_water_ml = sum(e["amount_grams"] for e in water_entries_only)
     water_glasses = round(total_water_ml / 250.0, 1)
 
     def add_water_to_log_tab(amount_val):
         w_item_name = f"מים בהתאמה אישית ({amount_val} מל')" if amount_val not in [250, 500, 1500] else ("מים (כוס / 250 מ\"ל)" if amount_val == 250 else ("בקבוק מים מינרליים (500 מ\"ל)" if amount_val == 500 else "בקבוק מים גדול (1.5 ליטר)"))
-        existing_w = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", w_item_name).execute()
-        w_food_id = existing_w.data[0]["id"] if existing_w.data else supabase.table("food_items").insert({"user_id": user_id, "name": w_item_name, "calories_per_100g": 0.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 0.0}).execute().data[0]["id"]
+        w_data = {"name": w_item_name, "cal": 0.0, "p": 0.0, "c": 0.0, "f": 0.0}
+        w_food_id = get_or_create_food_item(user_id, w_data)
         supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": w_food_id, "amount_grams": float(amount_val), "meal_type": t["breakfast"]}).execute()
         st.rerun()
 
@@ -1000,6 +1054,8 @@ with tab_workouts:
     st.markdown("<br>", unsafe_allow_html=True)
     
     if st.button(t["add_workout_btn"], use_container_width=True):
+        # הערה: אם השורה הבאה נכשלת עם שגיאת עמודה חסרה, יש להריץ במסד הנתונים:
+        # ALTER TABLE workouts ADD COLUMN total_calories INTEGER;
         try:
             supabase.table("workouts").insert({
                 "user_id": user_id,
@@ -1012,18 +1068,7 @@ with tab_workouts:
             st.success("האימון נוסף בהצלחה!")
             st.rerun()
         except Exception as e:
-            try:
-                supabase.table("workouts").insert({
-                    "user_id": user_id,
-                    "date": selected_date,
-                    "workout_type": w_type,
-                    "duration_minutes": int(w_duration),
-                    "calories_burned": int(calc_active)
-                }).execute()
-                st.success("האימון נוסף בהצלחה!")
-                st.rerun()
-            except Exception as ex:
-                st.error(f"שגיאה בהוספת האימון: {ex}")
+            st.error(f"שגיאה בהוספת האימון: {e}. ייתכן שחסרה עמודת total_calories בטבלת workouts - יש להריץ מיגרציה במסד הנתונים.")
 
     st.divider()
     st.subheader("📋 אימונים מתועדים לתאריך הנבחר")
@@ -1060,17 +1105,31 @@ with tab_photos:
         
         if submit_photo:
             if photo_file is not None:
-                import base64
-                bytes_data = photo_file.getvalue()
-                base64_str = base64.b64encode(bytes_data).decode("utf-8")
-                img_data_url = f"data:image/jpeg;base64,{base64_str}"
-                
                 p_date_str = photo_date.strftime("%Y-%m-%d")
+                bytes_data = photo_file.getvalue()
+                stored_url = None
+                # ניסיון ראשון: אחסון אמיתי ב-Supabase Storage (bucket בשם "progress-photos"),
+                # יעיל בהרבה מאחסון base64 בתוך טבלת ה-DB.
+                try:
+                    file_ext = photo_file.name.split(".")[-1] if "." in photo_file.name else "jpg"
+                    storage_path = f"{user_id}/{p_date_str}_{photo_file.name}"
+                    supabase.storage.from_("progress-photos").upload(
+                        storage_path, bytes_data,
+                        {"content-type": photo_file.type or f"image/{file_ext}"}
+                    )
+                    stored_url = supabase.storage.from_("progress-photos").get_public_url(storage_path)
+                except Exception:
+                    # Fallback: אם ה-bucket לא קיים/לא מוגדר, נשמור base64 כמו קודם
+                    # (לא אידיאלי לטווח ארוך - מומלץ ליצור bucket בשם progress-photos ב-Supabase).
+                    import base64
+                    base64_str = base64.b64encode(bytes_data).decode("utf-8")
+                    stored_url = f"data:image/jpeg;base64,{base64_str}"
+
                 try:
                     supabase.table("progress_photos").insert({
                         "user_id": user_id,
                         "date": p_date_str,
-                        "image_url": img_data_url,
+                        "image_url": stored_url,
                         "note": photo_note
                     }).execute()
                     st.success("✅ התמונה נשמרה בהצלחה בגלריה האישית!")
@@ -1130,7 +1189,10 @@ with tab_history:
             if st.button("💾 שמור מדידת משקל"):
                 w_date_str = weight_date_input.strftime("%Y-%m-%d")
                 try:
-                    supabase.table("weight_logs").upsert({"user_id": user_id, "date": w_date_str, "weight": float(new_weight_input)}).execute()
+                    supabase.table("weight_logs").upsert(
+                        {"user_id": user_id, "date": w_date_str, "weight": float(new_weight_input)},
+                        on_conflict="user_id,date"
+                    ).execute()
                 except Exception:
                     pass
                 
@@ -1169,10 +1231,7 @@ with tab_history:
     hist_log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", history_date_str).execute()
     hist_entries = hist_log_res.data
 
-    h_cal = sum(e["food_items"]["calories_per_100g"] * e["amount_grams"] / 100.0 for e in hist_entries)
-    h_p = sum(e["food_items"]["protein_per_100g"] * e["amount_grams"] / 100.0 for e in hist_entries)
-    h_c = sum(e["food_items"]["carbs_per_100g"] * e["amount_grams"] / 100.0 for e in hist_entries)
-    h_f = sum(e["food_items"]["fat_per_100g"] * e["amount_grams"] / 100.0 for e in hist_entries)
+    h_cal, h_p, h_c, h_f = safe_food_totals(hist_entries)
 
     hist_workouts_res = supabase.table("workouts").select("*").eq("user_id", user_id).eq("date", history_date_str).execute()
     hist_workouts = hist_workouts_res.data
@@ -1216,19 +1275,67 @@ with tab_history:
         """, unsafe_allow_html=True)
 
 with tab_camera:
-    st.subheader("📸 סריקת תמונה")
+    st.subheader("📸 סריקת תמונה (זיהוי מזון בעזרת AI)")
+    ai_client = get_anthropic_client()
+    if not ai_client:
+        st.warning("⚠️ זיהוי תמונות AI לא מוגדר. יש להוסיף ANTHROPIC_API_KEY לקובץ secrets.toml כדי להפעיל את הפיצ'ר בפועל.")
+
     uploaded_file = st.file_uploader("בחר תמונה", type=["jpg", "jpeg", "png"])
     meal_type_img = st.selectbox(t["meal_type"], [t["breakfast"], t["lunch"], t["dinner"], t["snack"]], key="img_meal")
 
     if uploaded_file is not None:
         st.image(uploaded_file, width=300)
         if st.button("זהה רכיבים והוסף ליומן"):
-            est_name = "ארוחה מצולמת (משוערת)"
-            existing = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", est_name).execute()
-            food_id = existing.data[0]["id"] if existing.data else supabase.table("food_items").insert({"user_id": user_id, "name": est_name, "calories_per_100g": 450.0, "protein_per_100g": 30.0, "carbs_per_100g": 45.0, "fat_per_100g": 15.0}).execute().data[0]["id"]
-            supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": food_id, "amount_grams": 100.0, "meal_type": meal_type_img}).execute()
-            st.success("הארוחה נוספה!")
-            st.rerun()
+            if not ai_client:
+                st.error("לא ניתן לזהות את התמונה - חסר מפתח API. פנה להגדרות המערכת.")
+            else:
+                with st.spinner("מזהה את תוכן הצלחת..."):
+                    try:
+                        import base64
+                        img_bytes = uploaded_file.getvalue()
+                        img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+                        media_type = uploaded_file.type or "image/jpeg"
+
+                        response = ai_client.messages.create(
+                            model="claude-sonnet-4-6",
+                            max_tokens=500,
+                            messages=[{
+                                "role": "user",
+                                "content": [
+                                    {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": img_b64}},
+                                    {"type": "text", "text": (
+                                        "זהה את המזון בתמונה והערך את הערכים התזונתיים הכוללים למנה. "
+                                        "החזר אך ורק אובייקט JSON תקני (ללא טקסט נוסף, ללא markdown) בפורמט: "
+                                        '{"name": "<שם המזון בעברית>", "estimated_grams": <מספר>, '
+                                        '"cal": <קלוריות ל-100 גרם>, "p": <חלבון ל-100 גרם>, '
+                                        '"c": <פחמימות ל-100 גרם>, "f": <שומן ל-100 גרם>}'
+                                    )}
+                                ]
+                            }]
+                        )
+                        raw_text = "".join(b.text for b in response.content if getattr(b, "type", "") == "text")
+                        clean_text = raw_text.replace("```json", "").replace("```", "").strip()
+                        import json
+                        parsed = json.loads(clean_text)
+
+                        data = {
+                            "name": f"{parsed['name']} (זוהה ע\"י AI)",
+                            "cal": float(parsed.get("cal", 0)),
+                            "p": float(parsed.get("p", 0)),
+                            "c": float(parsed.get("c", 0)),
+                            "f": float(parsed.get("f", 0)),
+                        }
+                        est_grams = float(parsed.get("estimated_grams", 100))
+
+                        food_id = get_or_create_food_item(user_id, data)
+                        supabase.table("food_log").insert({
+                            "user_id": user_id, "date": selected_date, "food_id": food_id,
+                            "amount_grams": est_grams, "meal_type": meal_type_img
+                        }).execute()
+                        st.success(f"✅ זוהה: {parsed['name']} (~{int(est_grams)} גרם) ונוסף ליומן!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"שגיאה בזיהוי התמונה: {e}. ניתן להוסיף את הפריט ידנית בלשונית 'חיפוש והוספה'.")
 
 # --- מסך יומן אכילה ראשי ---
 with tab_log:
@@ -1236,10 +1343,7 @@ with tab_log:
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
     entries = log_res.data
     
-    consumed_cal = sum(e["food_items"]["calories_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
-    consumed_p = sum(e["food_items"]["protein_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
-    consumed_c = sum(e["food_items"]["carbs_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
-    consumed_f = sum(e["food_items"]["fat_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
+    consumed_cal, consumed_p, consumed_c, consumed_f = safe_food_totals(entries)
 
     workouts_res_summary = supabase.table("workouts").select("*").eq("user_id", user_id).eq("date", selected_date).execute()
     total_burned_cals = sum(w.get("calories_burned", 0) for w in workouts_res_summary.data) if workouts_res_summary.data else 0
@@ -1300,17 +1404,16 @@ with tab_log:
                     meals_map[t["breakfast"]].append(e)
 
         for meal_name, meal_items in meals_map.items():
-            meal_cals = sum(item["food_items"]["calories_per_100g"] * item["amount_grams"] / 100.0 for item in meal_items)
-            meal_p = sum(item["food_items"]["protein_per_100g"] * item["amount_grams"] / 100.0 for item in meal_items)
-            meal_c = sum(item["food_items"]["carbs_per_100g"] * item["amount_grams"] / 100.0 for item in meal_items)
-            meal_f = sum(item["food_items"]["fat_per_100g"] * item["amount_grams"] / 100.0 for item in meal_items)
+            meal_cals, meal_p, meal_c, meal_f = safe_food_totals(meal_items)
 
             expander_title = f"🍽️ **{meal_name}** &nbsp;&nbsp;|&nbsp;&nbsp; 🔥 {round(meal_cals, 1)} קל' | 🥩 {round(meal_p, 1)}g חלבון | 🍞 {round(meal_c, 1)}g פח' | 🥑 {round(meal_f, 1)}g שומן"
 
             with st.expander(expander_title):
                 if meal_items:
                     for e in meal_items:
-                        food_item = e["food_items"]
+                        food_item = e.get("food_items")
+                        if not food_item:
+                            continue
                         amt = e["amount_grams"]
                         
                         item_cal = food_item['calories_per_100g'] * amt / 100.0
@@ -1374,10 +1477,41 @@ with tab_log:
         st.info("No logs for today.")
 
 with tab_ai:
-    st.subheader("🤖 AI Advisor")
-    user_query = st.text_area("Ask anything:")
-    if st.button("Send"):
-        st.markdown("### 💡 AI Response\nKeep up the great work and maintain high protein intake!")
+    st.subheader("🤖 יועץ תזונה AI")
+    ai_client = get_anthropic_client()
+    if not ai_client:
+        st.warning("⚠️ יועץ ה-AI לא מוגדר. יש להוסיף ANTHROPIC_API_KEY לקובץ secrets.toml כדי להפעיל את הפיצ'ר בפועל.")
+
+    user_query = st.text_area("שאל כל שאלה בנוגע לתזונה, האימונים או ההתקדמות שלך:")
+    if st.button("שלח שאלה"):
+        if not user_query.strip():
+            st.warning("נא להקליד שאלה.")
+        elif not ai_client:
+            st.error("לא ניתן לענות כרגע - חסר מפתח API. פנה להגדרות המערכת.")
+        else:
+            with st.spinner("חושב..."):
+                try:
+                    # מקבץ הקשר אמיתי מהיום הנבחר כדי שהתשובה תהיה מבוססת נתונים אמיתיים
+                    ctx_log = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute().data
+                    ctx_cal, ctx_p, ctx_c, ctx_f = safe_food_totals(ctx_log)
+                    context_str = (
+                        f"נתוני היום ({selected_date}) של המשתמש: "
+                        f"קלוריות שנאכלו: {round(ctx_cal)} מתוך יעד {user_goals['target_calories']}, "
+                        f"חלבון: {round(ctx_p)}g מתוך יעד {user_goals['target_protein']}g, "
+                        f"פחמימות: {round(ctx_c)}g מתוך יעד {user_goals['target_carbs']}g, "
+                        f"שומן: {round(ctx_f)}g מתוך יעד {user_goals['target_fat']}g. "
+                        f"פרופיל: גיל {profile_data.get('age')}, משקל {profile_data.get('weight')} ק\"ג, מטרה: {profile_data.get('goal')}."
+                    )
+                    response = ai_client.messages.create(
+                        model="claude-sonnet-4-6",
+                        max_tokens=600,
+                        system="אתה יועץ תזונה ואימונים ידידותי. ענה בעברית, בקצרה ובאופן מעשי, בהתבסס על הנתונים שסופקו. אל תיתן ייעוץ רפואי.",
+                        messages=[{"role": "user", "content": f"{context_str}\n\nשאלת המשתמש: {user_query}"}]
+                    )
+                    answer_text = "".join(b.text for b in response.content if getattr(b, "type", "") == "text")
+                    st.markdown(f"### 💡 תשובת היועץ\n{answer_text}")
+                except Exception as e:
+                    st.error(f"שגיאה בפנייה ליועץ ה-AI: {e}")
 
 with tab_settings:
     st.subheader(t["settings_header"])
@@ -1423,4 +1557,3 @@ with tab_settings:
                     st.error(f"Error updating account: {e}")
             else:
                 st.info("No changes made.")
-                
