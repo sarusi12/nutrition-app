@@ -171,8 +171,9 @@ bg_color = "#0e1117" if is_dark else "#f8f9fa"
 text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
 widget_border = "rgba(255, 255, 255, 0.15)" if is_dark else "rgba(0, 0, 0, 0.08)"
+tab_inactive_bg = "rgba(255, 255, 255, 0.03)" if is_dark else "rgba(0, 0, 0, 0.04)"
+tab_active_bg = "rgba(0, 122, 255, 0.25)" if is_dark else "rgba(0, 122, 255, 0.15)"
 
-# כיוון טקסט דינמי לפי השפה הנבחרת
 is_rtl = "Hebrew" in selected_lang or "עברית" in selected_lang
 dir_val = "rtl" if is_rtl else "ltr"
 text_align_val = "right" if is_rtl else "left"
@@ -191,7 +192,6 @@ st.markdown(
         -ms-text-size-adjust: 100%;
     }}
     
-    /* תיקון פונטים וטקסטים בכל מצב (מונע טקסט אפור/כהה במצב לילה) */
     p, span, label, div, h1, h2, h3, h4, h5, h6, .stMarkdown, .stText, [data-testid="stMarkdownContainer"] {{
         color: {text_color} !important;
     }}
@@ -216,6 +216,7 @@ st.markdown(
         direction: {dir_val} !important;
     }}
 
+    /* תיקון קריטי לטאבים (לשוניות) במצב לילה ויום */
     .stTabs [data-baseweb="tab-list"] {{
         direction: {dir_val};
         gap: 6px;
@@ -228,31 +229,38 @@ st.markdown(
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         margin-bottom: 20px;
+        border: 1px solid {widget_border};
     }}
     
     .stTabs [data-baseweb="tab"] {{
         border-radius: 12px;
         padding: 10px 16px !important;
         color: {text_color} !important;
-        background-color: transparent !important;
+        background-color: {tab_inactive_bg} !important;
         white-space: nowrap;
         font-size: 1.05em !important;
         font-weight: 700 !important;
         -ms-flex-negative: 0;
         flex-shrink: 0;
+        border: 1px solid transparent;
+    }}
+
+    .stTabs [data-baseweb="tab"]:hover {{
+        background-color: {widget_border} !important;
     }}
 
     .stTabs [data-baseweb="tab"][aria-selected="true"] {{
-        background-color: rgba(10, 132, 255, 0.22) !important;
+        background-color: {tab_active_bg} !important;
         color: {text_color} !important;
-        border: 1px solid rgba(10, 132, 255, 0.5) !important;
+        border: 1px solid rgba(0, 122, 255, 0.6) !important;
     }}
+    
     .stTabs [data-baseweb="tab"] p,
     .stTabs [data-baseweb="tab"] div {{
-        color: inherit !important;
+        color: {text_color} !important;
     }}
 
-    /* תיקון קריטי לתפריטי בחירה נפתחים (Selectbox / Dropdown) במצב לילה */
+    /* תפריטי בחירה נפתחים (Selectbox / Dropdown) במצב לילה */
     ul[data-baseweb="menu"],
     div[data-baseweb="popover"] {{
         background-color: {bg_color} !important;
