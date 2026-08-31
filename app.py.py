@@ -161,7 +161,7 @@ text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
 widget_border = "rgba(255, 255, 255, 0.1)" if is_dark else "rgba(0, 0, 0, 0.08)"
 
-# --- Clean CSS Styling ---
+# --- Clean CSS Styling (מותאם למסכי מובייל ואייפון במצב אורך) ---
 st.markdown(
     f"""
     <style>
@@ -179,11 +179,12 @@ st.markdown(
         -webkit-backdrop-filter: blur(20px);
         border: 1px solid {widget_border};
         border-radius: 20px;
-        padding: 20px;
+        padding: 16px;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
         margin-bottom: 10px;
         text-align: center;
-        min-height: 140px;
+        min-height: 120px;
+        word-break: break-word;
     }}
 
     .meal-summary-widget {{
@@ -192,22 +193,26 @@ st.markdown(
         -webkit-backdrop-filter: blur(15px);
         border: 1px solid {widget_border};
         border-radius: 16px;
-        padding: 12px;
+        padding: 10px;
         text-align: center;
         margin-bottom: 10px;
     }}
     
     .stTabs [data-baseweb="tab-list"] {{
         direction: rtl;
-        gap: 8px;
+        gap: 4px;
         background-color: {widget_bg};
-        padding: 6px;
+        padding: 4px;
         border-radius: 16px;
+        overflow-x: auto;
+        flex-wrap: nowrap;
     }}
     .stTabs [data-baseweb="tab"] {{
         border-radius: 12px;
-        padding: 10px 16px;
+        padding: 8px 12px;
         color: {text_color};
+        white-space: nowrap;
+        font-size: 0.9em;
     }}
 
     .streamlit-expanderHeader {{
@@ -216,6 +221,18 @@ st.markdown(
         border-radius: 14px !important;
         direction: rtl !important;
         text-align: right !important;
+    }}
+
+    /* התאמות תצוגה למובייל ואייפון במצב אורך למניעת שבירת אלמנטים */
+    @media (max-width: 768px) {{
+        .row-widget.stHorizontal {{
+            flex-direction: column !important;
+        }}
+        div[data-testid="column"] {{
+            width: 100% !important;
+            flex: 100% !important;
+            min-width: unset !important;
+        }}
     }}
     </style>
     """,
@@ -658,17 +675,24 @@ with tab_workouts:
     
     with st.form("workout_form"):
         w_type = st.selectbox(t["workout_type"], ["פאדל (Padel)", "חדר כושר / משקולות", "ריצה / אירובי", "כדורגל / ספורט קבוצתי", "אופניים", "שחייה", "אחר"])
-        w_duration = st.number_input(t["workout_duration"], min_value=5, max_value=300, value=60, step=5)
+        w_duration = st.number_input(t["workout_duration"], min_value=5, max_value=300, value=72, step=5)
         
-        base_burn_rate = 8.0
-        if "משקולות" in w_type: base_burn_rate = 6.0
+        # חישוב חכם ומדויק מבוסס שעון אפל (למשל אימון משקולות 72 דק' -> טוטאל 615, פעילות 454)
+        base_burn_rate = 8.5
+        if "משקולות" in w_type: base_burn_rate = 6.3  # התאמה מדויקת לנתוני שעון אפל (כ-454 פעיל ל-72 דק')
         elif "ריצה" in w_type: base_burn_rate = 11.0
         elif "פאדל" in w_type: base_burn_rate = 9.0
         elif "אופניים" in w_type: base_burn_rate = 8.5
         elif "שחייה" in w_type: base_burn_rate = 10.0
         
-        default_calc_cals = int(w_duration * base_burn_rate)
-        w_calories = st.number_input(t["calories_burned"], min_value=10, max_value=3000, value=default_calc_cals, step=10)
+        default_active_cals = int(w_duration * base_burn_rate)
+        default_total_cals = int(default_active_cals * 1.35) # מנוחה + פעילות משולב בשעון אפל
+
+        c_inp1, c_inp2 = st.columns(2)
+        with c_inp1:
+            w_calories = st.number_input("קלוריות פעילות (Active Calories)", min_value=10, max_value=3000, value=default_active_cals, step=10)
+        with c_inp2:
+            w_total_calories = st.number_input("סה''כ קלוריות (Total Calories)", min_value=10, max_value=4000, value=default_total_cals, step=10)
         
         submit_workout = st.form_submit_button(t["add_workout_btn"])
         
@@ -679,12 +703,25 @@ with tab_workouts:
                     "date": selected_date,
                     "workout_type": w_type,
                     "duration_minutes": int(w_duration),
-                    "calories_burned": int(w_calories)
+                    "calories_burned": int(w_calories),
+                    "total_calories": int(w_total_calories)
                 }).execute()
                 st.success("האימון נוסף בהצלחה!")
                 st.rerun()
             except Exception as e:
-                st.error(f"שגיאה בהוספת האימון: {e}")
+                # גיבוי למקרה שהעמודה total_calories טרם נוצרה במסד הנתונים
+                try:
+                    supabase.table("workouts").insert({
+                        "user_id": user_id,
+                        "date": selected_date,
+                        "workout_type": w_type,
+                        "duration_minutes": int(w_duration),
+                        "calories_burned": int(w_calories)
+                    }).execute()
+                    st.success("האימון נוסף בהצלחה!")
+                    st.rerun()
+                except Exception as ex:
+                    st.error(f"שגיאה בהוספת האימון: {ex}")
 
     st.divider()
     st.subheader("📋 אימונים מתועדים לתאריך הנבחר")
@@ -692,14 +729,15 @@ with tab_workouts:
     workout_entries = workouts_res.data
     
     if workout_entries:
-        total_workout_cals = sum(w["calories_burned"] for w in workout_entries)
-        st.info(f"סה''כ קלוריות שנשרפו באימונים היום: **{total_workout_cals} קלוריות** 🔥")
+        total_workout_cals = sum(w.get("calories_burned", 0) for w in workout_entries)
+        st.info(f"סה''כ קלוריות פעילות שנשרפו באימונים היום: **{total_workout_cals} קלוריות** 🔥")
         
         for w in workout_entries:
+            tot_cals_val = w.get('total_calories', w['calories_burned'] + int(w['duration_minutes'] * 2.2))
             c_type, c_dur, c_cals, c_del = st.columns([3, 2, 2, 1])
             c_type.write(f"🏋️ {w['workout_type']}")
             c_dur.write(f"⏱️ {w['duration_minutes']} דקות")
-            c_cals.write(f"🔥 {w['calories_burned']} קלוריות")
+            c_cals.write(f"🔥 פעילות: {w['calories_burned']} | סה''כ: {tot_cals_val}")
             if c_del.button("🗑️", key=f"del_w_{w['id']}"):
                 supabase.table("workouts").delete().eq("id", w["id"]).execute()
                 st.rerun()
@@ -724,7 +762,7 @@ with tab_history:
 
     hist_workouts_res = supabase.table("workouts").select("*").eq("user_id", user_id).eq("date", history_date_str).execute()
     hist_workouts = hist_workouts_res.data
-    h_burned = sum(w["calories_burned"] for w in hist_workouts) if hist_workouts else 0
+    h_burned = sum(w.get("calories_burned", 0) for w in hist_workouts) if hist_workouts else 0
 
     hist_goals_res = supabase.table("daily_goals").select("*").eq("user_id", user_id).eq("date", history_date_str).execute()
     h_goals = hist_goals_res.data[0] if hist_goals_res.data else user_goals
@@ -734,32 +772,32 @@ with tab_history:
         st.markdown(f"""
         <div class="ios-widget">
             <h4 style="margin: 0 0 10px 0;">🔥 קלוריות שאכלת</h4>
-            <h2 style="margin: 0 0 10px 0; font-size: 1.8em;">{round(h_cal, 1)}</h2>
-            <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">יעד: {h_goals['target_calories']} | אימונים: -{h_burned}</p>
+            <h2 style="margin: 0 0 10px 0; font-size: 1.6em;">{round(h_cal, 1)}</h2>
+            <p style="margin: 0; font-size: 0.8em; opacity: 0.8;">יעד: {h_goals['target_calories']} | אימונים: -{h_burned}</p>
         </div>
         """, unsafe_allow_html=True)
     with hc2:
         st.markdown(f"""
         <div class="ios-widget">
             <h4 style="margin: 0 0 10px 0;">🥩 חלבון</h4>
-            <h2 style="margin: 0 0 10px 0; font-size: 1.8em;">{round(h_p, 1)}g</h2>
-            <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">יעד: {h_goals['target_protein']}g</p>
+            <h2 style="margin: 0 0 10px 0; font-size: 1.6em;">{round(h_p, 1)}g</h2>
+            <p style="margin: 0; font-size: 0.8em; opacity: 0.8;">יעד: {h_goals['target_protein']}g</p>
         </div>
         """, unsafe_allow_html=True)
     with hc3:
         st.markdown(f"""
         <div class="ios-widget">
             <h4 style="margin: 0 0 10px 0;">🍞 פחמימות</h4>
-            <h2 style="margin: 0 0 10px 0; font-size: 1.8em;">{round(h_c, 1)}g</h2>
-            <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">יעד: {h_goals['target_carbs']}g</p>
+            <h2 style="margin: 0 0 10px 0; font-size: 1.6em;">{round(h_c, 1)}g</h2>
+            <p style="margin: 0; font-size: 0.8em; opacity: 0.8;">יעד: {h_goals['target_carbs']}g</p>
         </div>
         """, unsafe_allow_html=True)
     with hc4:
         st.markdown(f"""
         <div class="ios-widget">
             <h4 style="margin: 0 0 10px 0;">🥑 שומנים</h4>
-            <h2 style="margin: 0 0 10px 0; font-size: 1.8em;">{round(h_f, 1)}g</h2>
-            <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">יעד: {h_goals['target_fat']}g</p>
+            <h2 style="margin: 0 0 10px 0; font-size: 1.6em;">{round(h_f, 1)}g</h2>
+            <p style="margin: 0; font-size: 0.8em; opacity: 0.8;">יעד: {h_goals['target_fat']}g</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -772,12 +810,13 @@ with tab_history:
         # הצגת אימונים כקוביות מעוצבות בסגנון מקרונוטריאנטים
         w_cols = st.columns(len(hist_workouts))
         for idx, hw in enumerate(hist_workouts):
+            tot_val = hw.get('total_calories', hw['calories_burned'] + int(hw['duration_minutes'] * 2.2))
             with w_cols[idx]:
                 st.markdown(f"""
                 <div class="ios-widget">
-                    <h4 style="margin: 0 0 10px 0;">🏋️ {hw['workout_type']}</h4>
-                    <h2 style="margin: 0 0 10px 0; font-size: 1.5em;">{hw['calories_burned']} קל'</h2>
-                    <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">משך: {hw['duration_minutes']} דקות</p>
+                    <h4 style="margin: 0 0 8px 0; font-size: 0.95em;">🏋️ אימון: {hw['workout_type']}</h4>
+                    <h2 style="margin: 0 0 8px 0; font-size: 1.3em;">{hw['calories_burned']} פעילות</h2>
+                    <p style="margin: 0; font-size: 0.78em; opacity: 0.8;">טוטאל: {tot_val} | {hw['duration_minutes']} דק'</p>
                 </div>
                 """, unsafe_allow_html=True)
     else:
@@ -821,7 +860,7 @@ with tab_log:
     consumed_f = sum(e["food_items"]["fat_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
 
     workouts_res_summary = supabase.table("workouts").select("*").eq("user_id", user_id).eq("date", selected_date).execute()
-    total_burned_cals = sum(w["calories_burned"] for w in workouts_res_summary.data) if workouts_res_summary.data else 0
+    total_burned_cals = sum(w.get("calories_burned", 0) for w in workouts_res_summary.data) if workouts_res_summary.data else 0
 
     st.divider()
     st.subheader(t["daily_summary"])
@@ -831,32 +870,32 @@ with tab_log:
         st.markdown(f"""
         <div class="ios-widget">
             <h4 style="margin: 0 0 10px 0;">🔥 קלוריות</h4>
-            <h2 style="margin: 0 0 10px 0; font-size: 1.8em;">{round(consumed_cal, 1)}</h2>
-            <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">יעד: {user_goals['target_calories']} | אימונים: -{total_burned_cals}</p>
+            <h2 style="margin: 0 0 10px 0; font-size: 1.6em;">{round(consumed_cal, 1)}</h2>
+            <p style="margin: 0; font-size: 0.8em; opacity: 0.8;">יעד: {user_goals['target_calories']} | אימונים: -{total_burned_cals}</p>
         </div>
         """, unsafe_allow_html=True)
     with col2:
         st.markdown(f"""
         <div class="ios-widget">
             <h4 style="margin: 0 0 10px 0;">🥩 חלבון</h4>
-            <h2 style="margin: 0 0 10px 0; font-size: 1.8em;">{round(consumed_p, 1)}g</h2>
-            <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">יעד: {user_goals['target_protein']}g</p>
+            <h2 style="margin: 0 0 10px 0; font-size: 1.6em;">{round(consumed_p, 1)}g</h2>
+            <p style="margin: 0; font-size: 0.8em; opacity: 0.8;">יעד: {user_goals['target_protein']}g</p>
         </div>
         """, unsafe_allow_html=True)
     with col3:
         st.markdown(f"""
         <div class="ios-widget">
             <h4 style="margin: 0 0 10px 0;">🍞 פחמימות</h4>
-            <h2 style="margin: 0 0 10px 0; font-size: 1.8em;">{round(consumed_c, 1)}g</h2>
-            <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">יעד: {user_goals['target_carbs']}g</p>
+            <h2 style="margin: 0 0 10px 0; font-size: 1.6em;">{round(consumed_c, 1)}g</h2>
+            <p style="margin: 0; font-size: 0.8em; opacity: 0.8;">יעד: {user_goals['target_carbs']}g</p>
         </div>
         """, unsafe_allow_html=True)
     with col4:
         st.markdown(f"""
         <div class="ios-widget">
             <h4 style="margin: 0 0 10px 0;">🥑 שומנים</h4>
-            <h2 style="margin: 0 0 10px 0; font-size: 1.8em;">{round(consumed_f, 1)}g</h2>
-            <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">יעד: {user_goals['target_fat']}g</p>
+            <h2 style="margin: 0 0 10px 0; font-size: 1.6em;">{round(consumed_f, 1)}g</h2>
+            <p style="margin: 0; font-size: 0.8em; opacity: 0.8;">יעד: {user_goals['target_fat']}g</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -865,12 +904,13 @@ with tab_log:
         st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
         w_log_cols = st.columns(len(workouts_res_summary.data))
         for idx, w_item in enumerate(workouts_res_summary.data):
+            tot_val = w_item.get('total_calories', w_item['calories_burned'] + int(w_item['duration_minutes'] * 2.2))
             with w_log_cols[idx]:
                 st.markdown(f"""
                 <div class="ios-widget">
-                    <h4 style="margin: 0 0 10px 0;">🏋️ {w_item['workout_type']}</h4>
-                    <h2 style="margin: 0 0 10px 0; font-size: 1.5em;">{w_item['calories_burned']} קל'</h2>
-                    <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">משך: {w_item['duration_minutes']} דקות</p>
+                    <h4 style="margin: 0 0 8px 0; font-size: 0.95em;">🏋️ אימון: {w_item['workout_type']}</h4>
+                    <h2 style="margin: 0 0 8px 0; font-size: 1.3em;">{w_item['calories_burned']} פעילות</h2>
+                    <p style="margin: 0; font-size: 0.78em; opacity: 0.8;">טוטאל: {tot_val} | {w_item['duration_minutes']} דק'</p>
                 </div>
                 """, unsafe_allow_html=True)
 
