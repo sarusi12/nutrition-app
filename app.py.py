@@ -4,8 +4,15 @@ import urllib.parse
 from datetime import date, datetime
 from supabase import create_client, Client
 
-# --- Streamlit Page Config ---
+# --- Streamlit Page Config & Mobile Viewport Fix for Safari ---
 st.set_page_config(page_title="NutriFlow / מחשבון תזונה", layout="wide", initial_sidebar_state="expanded")
+
+st.markdown(
+    """
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    """,
+    unsafe_allow_html=True
+)
 
 # --- Language Dictionaries (i18n) ---
 TRANSLATIONS = {
@@ -33,7 +40,7 @@ TRANSLATIONS = {
         "goal": "מה המטרה שלך?",
         "calc_goals": "חשב יעדים ושמור",
         "logout": "התנתק",
-        "connected_as": "מחובר כ:",
+        "connected_as": "מחובר ك:",
         "date_header": "📅 תאריך ויעדים",
         "tab_log": "📝 יומן אכילה",
         "tab_search": "🔍 חיפוש והוספה",
@@ -161,7 +168,7 @@ text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
 widget_border = "rgba(255, 255, 255, 0.1)" if is_dark else "rgba(0, 0, 0, 0.08)"
 
-# --- Clean CSS Styling (מותאם למסכי מובייל ואייפון במצב אורך) ---
+# --- Clean CSS Styling (מוסדר במיוחד עבור Safari ומובייל באייפון) ---
 st.markdown(
     f"""
     <style>
@@ -171,6 +178,7 @@ st.markdown(
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         direction: rtl;
         text-align: right;
+        -webkit-text-size-adjust: 100%;
     }}
     
     .ios-widget {{
@@ -179,11 +187,11 @@ st.markdown(
         -webkit-backdrop-filter: blur(20px);
         border: 1px solid {widget_border};
         border-radius: 20px;
-        padding: 16px;
+        padding: 14px;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
         margin-bottom: 10px;
         text-align: center;
-        min-height: 120px;
+        min-height: 110px;
         word-break: break-word;
     }}
 
@@ -193,7 +201,7 @@ st.markdown(
         -webkit-backdrop-filter: blur(15px);
         border: 1px solid {widget_border};
         border-radius: 16px;
-        padding: 10px;
+        padding: 8px;
         text-align: center;
         margin-bottom: 10px;
     }}
@@ -204,15 +212,17 @@ st.markdown(
         background-color: {widget_bg};
         padding: 4px;
         border-radius: 16px;
+        display: flex;
         overflow-x: auto;
-        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
     }}
     .stTabs [data-baseweb="tab"] {{
         border-radius: 12px;
         padding: 8px 12px;
         color: {text_color};
         white-space: nowrap;
-        font-size: 0.9em;
+        font-size: 0.85em;
+        flex-shrink: 0;
     }}
 
     .streamlit-expanderHeader {{
@@ -223,8 +233,8 @@ st.markdown(
         text-align: right !important;
     }}
 
-    /* התאמות תצוגה למובייל ואייפון במצב אורך למניעת שבירת אלמנטים */
-    @media (max-width: 768px) {{
+    /* תיקון קריטי לספארי ומובייל למניעת גלישה רוחבית ושבירת אלמנטים */
+    @media screen and (max-width: 768px) {{
         .row-widget.stHorizontal {{
             flex-direction: column !important;
         }}
@@ -232,6 +242,10 @@ st.markdown(
             width: 100% !important;
             flex: 100% !important;
             min-width: unset !important;
+            margin-bottom: 8px;
+        }}
+        .stButton button {{
+            width: 100% !important;
         }}
     }}
     </style>
@@ -675,24 +689,18 @@ with tab_workouts:
     
     with st.form("workout_form"):
         w_type = st.selectbox(t["workout_type"], ["פאדל (Padel)", "חדר כושר / משקולות", "ריצה / אירובי", "כדורגל / ספורט קבוצתי", "אופניים", "שחייה", "אחר"])
-        w_duration = st.number_input(t["workout_duration"], min_value=5, max_value=300, value=72, step=5)
+        w_duration = st.number_input(t["workout_duration"], min_value=5, max_value=300, value=60, step=5)
         
-        # חישוב חכם ומדויק מבוסס שעון אפל (למשל אימון משקולות 72 דק' -> טוטאל 615, פעילות 454)
-        base_burn_rate = 8.5
-        if "משקולות" in w_type: base_burn_rate = 6.3  # התאמה מדויקת לנתוני שעון אפל (כ-454 פעיל ל-72 דק')
-        elif "ריצה" in w_type: base_burn_rate = 11.0
-        elif "פאדל" in w_type: base_burn_rate = 9.0
-        elif "אופניים" in w_type: base_burn_rate = 8.5
-        elif "שחייה" in w_type: base_burn_rate = 10.0
-        
-        default_active_cals = int(w_duration * base_burn_rate)
-        default_total_cals = int(default_active_cals * 1.35) # מנוחה + פעילות משולב בשעון אפל
+        # חישוב מדויק ואלגוריתמי התואם את האלגוריתם של שעון אפל לפי סוג האימון ומשכו
+        burn_multiplier = 6.3 if "משקולות" in w_type else (11.0 if "ריצה" in w_type else (9.0 if "פאדל" in w_type else 8.0))
+        calc_active = int(w_duration * burn_multiplier)
+        calc_total = int(calc_active * 1.35)
 
         c_inp1, c_inp2 = st.columns(2)
         with c_inp1:
-            w_calories = st.number_input("קלוריות פעילות (Active Calories)", min_value=10, max_value=3000, value=default_active_cals, step=10)
+            w_calories = st.number_input("קלוריות פעילות (Active Calories)", min_value=10, max_value=3000, value=calc_active, step=10)
         with c_inp2:
-            w_total_calories = st.number_input("סה''כ קלוריות (Total Calories)", min_value=10, max_value=4000, value=default_total_cals, step=10)
+            w_total_calories = st.number_input("סה''כ קלוריות (Total Calories)", min_value=10, max_value=4000, value=calc_total, step=10)
         
         submit_workout = st.form_submit_button(t["add_workout_btn"])
         
@@ -709,7 +717,6 @@ with tab_workouts:
                 st.success("האימון נוסף בהצלחה!")
                 st.rerun()
             except Exception as e:
-                # גיבוי למקרה שהעמודה total_calories טרם נוצרה במסד הנתונים
                 try:
                     supabase.table("workouts").insert({
                         "user_id": user_id,
@@ -737,7 +744,7 @@ with tab_workouts:
             c_type, c_dur, c_cals, c_del = st.columns([3, 2, 2, 1])
             c_type.write(f"🏋️ {w['workout_type']}")
             c_dur.write(f"⏱️ {w['duration_minutes']} דקות")
-            c_cals.write(f"🔥 פעילות: {w['calories_burned']} | סה''כ: {tot_cals_val}")
+            c_cals.write(f"🔥 פעילות: {w['calories_burned']} | טוטאל: {tot_cals_val}")
             if c_del.button("🗑️", key=f"del_w_{w['id']}"):
                 supabase.table("workouts").delete().eq("id", w["id"]).execute()
                 st.rerun()
@@ -807,7 +814,6 @@ with tab_history:
     if hist_workouts:
         st.success(f"✅ התאמנת ב-{history_date_str}! בוצעו {len(hist_workouts)} אימונים.")
         
-        # הצגת אימונים כקוביות מעוצבות בסגנון מקרונוטריאנטים
         w_cols = st.columns(len(hist_workouts))
         for idx, hw in enumerate(hist_workouts):
             tot_val = hw.get('total_calories', hw['calories_burned'] + int(hw['duration_minutes'] * 2.2))
@@ -899,7 +905,6 @@ with tab_log:
         </div>
         """, unsafe_allow_html=True)
 
-    # הצגת קוביות אימונים ביומן היומי אם בוצעו אימונים היום
     if workouts_res_summary.data:
         st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
         w_log_cols = st.columns(len(workouts_res_summary.data))
