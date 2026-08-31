@@ -159,7 +159,7 @@ text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
 widget_border = "rgba(255, 255, 255, 0.1)" if is_dark else "rgba(0, 0, 0, 0.08)"
 
-# --- Clean CSS Styling ---
+# --- Clean CSS Styling (RTL & Beautiful Expander Support) ---
 st.markdown(
     f"""
     <style>
@@ -167,6 +167,8 @@ st.markdown(
         background-color: {bg_color};
         color: {text_color};
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        direction: rtl;
+        text-align: right;
     }}
     
     .ios-widget {{
@@ -193,7 +195,9 @@ st.markdown(
         margin-bottom: 10px;
     }}
     
+    /* יישור לשוניות ומודולים לימין */
     .stTabs [data-baseweb="tab-list"] {{
+        direction: rtl;
         gap: 8px;
         background-color: {widget_bg};
         padding: 6px;
@@ -203,6 +207,15 @@ st.markdown(
         border-radius: 12px;
         padding: 10px 16px;
         color: {text_color};
+    }}
+
+    /* עיצוב רצועות ארוחות (Expander) לימין בצורה נקייה וידידותית */
+    .streamlit-expanderHeader {{
+        background-color: {widget_bg} !important;
+        border: 1px solid {widget_border} !important;
+        border-radius: 14px !important;
+        direction: rtl !important;
+        text-align: right !important;
     }}
     </style>
     """,
@@ -657,7 +670,7 @@ with tab_camera:
             st.success("הארוחה נוספה!")
             st.rerun()
 
-# --- מסך יומן אכילה ראשי עם ריבועי מדדים ידידותיים בתוך הארוחות ---
+# --- מסך יומן אכילה ראשי עם תצוגת ארוחות מתוקנת מימין לשמאל ---
 with tab_log:
     st.subheader(f"תיעוד ארוחות לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
@@ -732,9 +745,12 @@ with tab_log:
             meal_c = sum(item["food_items"]["carbs_per_100g"] * item["amount_grams"] / 100.0 for item in meal_items)
             meal_f = sum(item["food_items"]["fat_per_100g"] * item["amount_grams"] / 100.0 for item in meal_items)
 
-            with st.expander(f"🍽️ {meal_name} (קלוריות: {round(meal_cals, 1)} | חלבון: {round(meal_p, 1)}g | פחמימות: {round(meal_c, 1)}g | שומן: {round(meal_f, 1)}g) — לחץ לפתיחה"):
+            # כותרת נכונה לימין: שם הארוחה בצד ימין, והנתונים בצד שמאל של השורה
+            expander_title = f"🍽️ **{meal_name}** &nbsp;&nbsp;|&nbsp;&nbsp; 🔥 {round(meal_cals, 1)} קל' | 🥩 {round(meal_p, 1)}g חלבון | 🍞 {round(meal_c, 1)}g פח' | 🥑 {round(meal_f, 1)}g שומן"
+
+            with st.expander(expander_title):
                 if meal_items:
-                    # סיכום ארוחה בריבועים מעוצבים כמו הסיכום היומי
+                    # סיכום ארוחה בריבועים מעוצבים לימין
                     mc1, mc2, mc3, mc4 = st.columns(4)
                     with mc1:
                         st.markdown(f"""
