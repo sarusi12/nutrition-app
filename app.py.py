@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import urllib.parse
 from datetime import date
 from supabase import create_client, Client
 
@@ -14,29 +15,64 @@ supabase = init_supabase()
 
 st.set_page_config(page_title="מחשבון תזונה ויומן אכילה", layout="wide")
 
-# --- Helper: Search Open Food Facts API ---
+# --- מאגר מובנה מהיר בעברית למאכלי בסיס ---
+LOCAL_DATABASE = {
+    "חזה עוף": {"cal": 165.0, "p": 31.0, "c": 0.0, "f": 3.6},
+    "חזה עוף מבושל": {"cal": 165.0, "p": 31.0, "c": 0.0, "f": 3.6},
+    "אורז לבן מבושל": {"cal": 130.0, "p": 2.7, "c": 28.0, "f": 0.3},
+    "אורז מלא מבושל": {"cal": 111.0, "p": 2.6, "c": 23.0, "f": 0.9},
+    "בננה": {"cal": 89.0, "p": 1.1, "c": 22.8, "f": 0.3},
+    "טונה במים": {"cal": 116.0, "p": 26.0, "c": 0.0, "f": 1.0},
+    "טונה בשמן": {"cal": 198.0, "p": 29.0, "c": 0.0, "f": 8.2},
+    "ביצה": {"cal": 155.0, "p": 12.6, "c": 1.1, "f": 10.6},
+    "שיבולת שועל": {"cal": 389.0, "p": 16.9, "c": 66.3, "f": 6.9},
+    "קוטג' 5%": {"cal": 95.0, "p": 11.0, "c": 1.5, "f": 5.0},
+    "תפוח אדמה מבושל": {"cal": 87.0, "p": 1.9, "c": 20.1, "f": 0.1},
+    "בשר בקר טחון 5%": {"cal": 137.0, "p": 21.4, "c": 0.0, "f": 5.0},
+}
+
 def fetch_nutrition_data(query):
+    query_clean = query.strip()
+    
+    # 1. בדיקה במאגר המקומי המהיר
+    if query_clean in LOCAL_DATABASE:
+        data = LOCAL_DATABASE[query_clean]
+        return {
+            "name": query_clean,
+            "cal": data["cal"],
+            "p": data["p"],
+            "c": data["c"],
+            "f": data["f"]
+        }
+        
+    # 2. חיפוש ברשת במידה ולא נמצא במאגר המקומי
     try:
-        url = f"https://world.openfoodfacts.org/cgi/search.pl?search_terms={query}&search_simple=1&action=process&json=1"
-        res = requests.get(url, timeout=5).json()
-        products = res.get("products", [])
-        if products:
-            p = products[0]
-            nutriments = p.get("nutriments", {})
-            cal = nutriments.get("energy-kcal_100g", nutriments.get("energy-kcal_value", 0))
-            protein = nutriments.get("proteins_100g", nutriments.get("proteins_value", 0))
-            carbs = nutriments.get("carbohydrates_100g", nutriments.get("carbohydrates_value", 0))
-            fat = nutriments.get("fat_100g", nutriments.get("fat_value", 0))
-            name = p.get("product_name_he", p.get("product_name", query))
-            return {
-                "name": name,
-                "cal": float(cal or 0),
-                "p": float(protein or 0),
-                "c": float(carbs or 0),
-                "f": float(fat or 0)
-            }
-    except Exception as e:
-        st.warning(f"לא ניתן לשלוף נתונים אוטומטית: {e}")
+        encoded_query = urllib.parse.quote(query_clean)
+        url = f"https://world.openfoodfacts.org/cgi/search.pl?search_terms={encoded_query}&search_simple=1&action=process&json=1"
+        headers = {'User-Agent': 'NutritionApp - Streamlit - Version 1.0'}
+        res = requests.get(url, headers=headers, timeout=5)
+        
+        if res.status_code == 200:
+            data = res.json()
+            products = data.get("products", [])
+            for p in products:
+                nutriments = p.get("nutriments", {})
+                cal = nutriments.get("energy-kcal_100g", nutriments.get("energy-kcal_value", 0))
+                protein = nutriments.get("proteins_100g", nutriments.get("proteins_value", 0))
+                carbs = nutriments.get("carbohydrates_100g", nutriments.get("carbohydrates_value", 0))
+                fat = nutriments.get("fat_100g", nutriments.get("fat_value", 0))
+                
+                if cal or protein or carbs or fat:
+                    name = p.get("product_name_he", p.get("product_name", query_clean))
+                    return {
+                        "name": name,
+                        "cal": float(cal or 0),
+                        "p": float(protein or 0),
+                        "c": float(carbs or 0),
+                        "f": float(fat or 0)
+                    }
+    except Exception:
+        pass
     return None
 
 # --- Authentication Logic ---
@@ -120,7 +156,7 @@ with st.sidebar.expander("הגדר/עדכן יעדים ליום זה"):
 tab_log, tab_auto_add = st.tabs(["📝 יומן אכילה", "🔍 חיפוש והוספה מהירה"])
 
 with tab_auto_add:
-    st.subheader("חפש מאכל ברשת (למשל: חזה עוף, אורז, בננה, טונה)")
+    st.subheader("חפש מאכל (למשל: חזה עוף, אורז לבן מבושל, בננה, טונה במים)")
     
     search_q = st.text_input("שם המאכל לחיפוש")
     amount_input = st.number_input("כמות בגרמים", min_value=1.0, value=100.0, step=10.0)
@@ -130,7 +166,6 @@ with tab_auto_add:
         if search_q:
             data = fetch_nutrition_data(search_q)
             if data:
-                # Save item to DB if not exists
                 item_name = data["name"]
                 existing = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", item_name).execute()
                 
@@ -147,7 +182,6 @@ with tab_auto_add:
                     }).execute()
                     food_id = new_item.data[0]["id"]
 
-                # Log food entry
                 supabase.table("food_log").insert({
                     "user_id": user_id,
                     "date": selected_date,
@@ -159,7 +193,7 @@ with tab_auto_add:
                 st.success(f"התווסף בהצלחה! ({item_name} - {amount_input} גרם)")
                 st.rerun()
             else:
-                st.error("לא נמאסו נתונים תזונתיים עבור מאכל זה. נסה לחפש באנגלית (למשל: Chicken breast).")
+                st.error("לא נמאסו נתונים תזונתיים. נסה לחפש מאכל מתוך הרשימה הבסיסית או באנגלית (Chicken breast).")
 
 with tab_log:
     st.subheader(f"תיעוד ארוחות לתאריך: {selected_date}")
