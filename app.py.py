@@ -258,6 +258,28 @@ st.markdown(
         line-height: 1.4;
     }}
 
+    /* עיצוב כפתורים ריבועיים תואמים למעקב מים */
+    div[data-testid="column"] div.stButton > button {{
+        background: linear-gradient(135deg, rgba(0, 122, 255, 0.08), rgba(88, 86, 214, 0.08)) !important;
+        border: 1px solid rgba(0, 122, 255, 0.25) !important;
+        border-radius: 16px !important;
+        color: {text_color} !important;
+        height: 104px !important;
+        font-weight: 700 !important;
+        font-size: 1.05em !important;
+        box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        transition: all 0.2s ease-in-out !important;
+    }}
+    
+    div[data-testid="column"] div.stButton > button:hover {{
+        border-color: rgba(0, 122, 255, 0.6) !important;
+        transform: translateY(-2px);
+    }}
+
     .streamlit-expanderHeader {{
         background-color: {widget_bg} !important;
         border: 1px solid {widget_border} !important;
@@ -278,8 +300,8 @@ st.markdown(
             min-width: unset !important;
             margin-bottom: 10px;
         }}
-        .stButton button {{
-            width: 100% !important;
+        div[data-testid="column"] div.stButton > button {{
+            height: 60px !important;
         }}
     }}
     </style>
@@ -1072,7 +1094,7 @@ with tab_camera:
             st.success("הארוחה נוספה!")
             st.rerun()
 
-# --- מסך יומן אכילה ראשי (כולל מעקב מים מותאם ומדויק) ---
+# --- מסך יומן אכילה ראשי (כולל מעקב מים מרובע ומדויק) ---
 with tab_log:
     st.subheader(f"תיעוד ארוחות ושתייה לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
@@ -1091,8 +1113,8 @@ with tab_log:
 
     st.divider()
     
-    # --- מעקב מים בצורת ריבוע גדול (כמו שאר סיכומי הרכיבים) ולידו 4 כפתורים מרובעים ---
-    wc_info, wc_b1, wc_b2, wc_b3, wc_b4 = st.columns([1.5, 1, 1, 1, 1])
+    # --- מעקב מים יומי בגודל ובצבע אחיד עם כפתורי ריבוע תואמים ---
+    wc_info, wc_b1, wc_b2, wc_b3, wc_b4 = st.columns(5)
     
     with wc_info:
         st.markdown(f"""
@@ -1111,30 +1133,22 @@ with tab_log:
         st.rerun()
 
     with wc_b1:
-        st.markdown("<div style='font-size: 0.85em; text-align: center; margin-bottom: 2px; font-weight: 600;'>כוס</div>", unsafe_allow_html=True)
-        if st.button("＋ 250", use_container_width=True, key="w_btn_250"):
+        if st.button("➕ 250 מ\"ל\n\n(כוס)", use_container_width=True, key="w_btn_250"):
             add_water_to_log(250)
             
     with wc_b2:
-        st.markdown("<div style='font-size: 0.85em; text-align: center; margin-bottom: 2px; font-weight: 600;'>בקבוק</div>", unsafe_allow_html=True)
-        if st.button("＋ 500", use_container_width=True, key="w_btn_500"):
+        if st.button("➕ 500 מ\"ל\n\n(בקבוק)", use_container_width=True, key="w_btn_500"):
             add_water_to_log(500)
             
     with wc_b3:
-        st.markdown("<div style='font-size: 0.85em; text-align: center; margin-bottom: 2px; font-weight: 600;'>ענק</div>", unsafe_allow_html=True)
-        if st.button("＋ 1.5L", use_container_width=True, key="w_btn_1500"):
+        if st.button("➕ 1.5 ליטר\n\n(ענק)", use_container_width=True, key="w_btn_1500"):
             add_water_to_log(1500)
             
     with wc_b4:
-        st.markdown("<div style='font-size: 0.85em; text-align: center; margin-bottom: 2px; font-weight: 600;'>מותאם אישית</div>", unsafe_allow_html=True)
-        custom_water_open = st.button("⚙️ בחר", use_container_width=True, key="w_btn_custom_toggle")
+        if st.button("⚙️ מותאם\n\nאישית", use_container_width=True, key="w_btn_custom_toggle"):
+            st.session_state["show_custom_water"] = not st.session_state.get("show_custom_water", False)
+            st.rerun()
 
-    if "show_custom_water" not in st.session_state:
-        st.session_state["show_custom_water"] = False
-        
-    if custom_water_open:
-        st.session_state["show_custom_water"] = not st.session_state["show_custom_water"]
-        
     if st.session_state.get("show_custom_water", False):
         st.markdown("<div style='background: rgba(0,122,255,0.05); padding: 12px; border-radius: 12px; border: 1px solid rgba(0,122,255,0.2); margin-top: 10px;'>", unsafe_allow_html=True)
         c_cust_1, c_cust_2 = st.columns([2, 1])
