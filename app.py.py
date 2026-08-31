@@ -38,6 +38,7 @@ TRANSLATIONS = {
         "tab_log": "📝 יומן אכילה",
         "tab_search": "🔍 חיפוש והוספה",
         "tab_workouts": "💪 אימונים ושריפת קלוריות",
+        "tab_history": "📅 היסטוריה ויומן",
         "tab_camera": "📸 סריקת תמונה",
         "tab_ai": "🤖 יועץ AI",
         "tab_settings": "⚙️ הגדרות פרופיל",
@@ -98,6 +99,7 @@ TRANSLATIONS = {
         "tab_log": "📝 Food Log",
         "tab_search": "🔍 Search & Add",
         "tab_workouts": "💪 Workouts & Calories",
+        "tab_history": "📅 History & Calendar",
         "tab_camera": "📸 Image Scan",
         "tab_ai": "🤖 AI Advisor",
         "tab_settings": "⚙️ Profile Settings",
@@ -231,7 +233,6 @@ supabase = init_supabase()
 
 # --- מאגר מובנה ענק ועשיר ---
 LOCAL_DATABASE = {
-    # ביצים וחביתות
     "ביצה שלמה (גדולה / L)": {"cal": 75.0, "p": 6.3, "c": 0.4, "f": 5.3},
     "חביתה (משתי ביצים מטוגנת בשמן רגיל)": {"cal": 185.0, "p": 13.0, "c": 1.0, "f": 13.5},
     "חביתה (משתי ביצים מטוגנת בשמן זית)": {"cal": 190.0, "p": 13.0, "c": 1.0, "f": 14.0},
@@ -243,8 +244,6 @@ LOCAL_DATABASE = {
     "ביצת עין (מטוגנת בשמן רגיל)": {"cal": 92.0, "p": 6.3, "c": 0.5, "f": 7.2},
     "ביצת עין (מטוגנת בשמן זית)": {"cal": 96.0, "p": 6.3, "c": 0.5, "f": 7.6},
     "חלבון ביצה (לבן בלבד)": {"cal": 52.0, "p": 10.9, "c": 0.7, "f": 0.2},
-    
-    # רטבים
     "מיונז (כף / 15 גרם)": {"cal": 105.0, "p": 0.1, "c": 0.1, "f": 11.5},
     "מיונז קל (כף / 15 גרם)": {"cal": 45.0, "p": 0.1, "c": 1.0, "f": 4.5},
     "קטשופ (כף / 15 גרם)": {"cal": 15.0, "p": 0.2, "c": 3.5, "f": 0.0},
@@ -257,8 +256,6 @@ LOCAL_DATABASE = {
     "טחינה מוכנה (כף / 15 גרם)": {"cal": 43.0, "p": 1.3, "c": 1.6, "f": 4.0},
     "רוטב סויה (כף / 15 גרם)": {"cal": 8.0, "p": 1.2, "c": 0.8, "f": 0.0},
     "רוטב טריאקי (כף / 15 גרם)": {"cal": 25.0, "p": 0.4, "c": 5.8, "f": 0.0},
-    
-    # מאכלים נוספים
     "טוסט מלחם אחיד עם גבינה צהובה 9%": {"cal": 240.0, "p": 16.0, "c": 30.0, "f": 5.0},
     "טוסט מלחם אחיד עם גבינה צהובה 28%": {"cal": 300.0, "p": 14.0, "c": 30.0, "f": 12.0},
     "טוסט מלחם קל עם גבינה צהובה 9%": {"cal": 180.0, "p": 17.0, "c": 20.0, "f": 4.0},
@@ -364,39 +361,30 @@ def get_unit_options(item_name):
     if not item_name or item_name == "-- ללא --":
         return ["גרם", "יחידות", "כפות"], 0
         
-    # 1. רטבים נמדדים בכפות או גרם
     if any(k in item_name for k in ["מיונז", "קטשופ", "סרירצ'ה", "צ'ילי", "שום", "אלף האיים", "חרדל", "ויניגרט", "סויה", "טריאקי"]):
         return ["כפות", "גרם"], 0
 
-    # 2. טוסטים, לחם, ביצים, חביתות, פירות - יחידות כברירת מחדל
     if any(k in item_name for k in ["טוסט", "פרוסת", "פיתה", "לחם", "ביצה", "חביתה", "בננה", "תפוח", "תפוז", "אגס", "עגבנייה", "מלפפון", "גבינה צהובה"]):
         return ["יחידות", "גרם"], 0
         
-    # 3. משקאות - מקבלים "בקבוק"
     if any(k in item_name for k in ["משקה חלבון", "תנובה", "יטבתה", "שטראוס", "מילקי"]):
         return ["בקבוק", "גרם"], 0
         
-    # 4. אבקות - סקופ
     if "אבקת חלבון" in item_name:
         return ["סקופ", "גרם"], 0
         
-    # 5. מאכלים נמדדים בכפות/כפיות כברירת מחדל
     if any(k in item_name for k in ["אורז", "פסטה", "קוסקוס", "בורגול", "קינואה", "כוסמת", "שיבולת שועל", "טחינה מוכנה"]):
         return ["כפות", "גרם", "כפיות"], 0
         
-    # 6. סלטים - קערה
     if "סלט" in item_name:
         return ["קערה / מנה", "גרם", "כפות"], 0
         
-    # 7. מוצרי חלב אחרים למריחה (קוטג', גבינה לבנה), וקופסאות שימורים - אריזה שלמה או גרם
     if any(k in item_name for k in ["טונה", "קוטג'", "גבינה", "יוגורט", "חלב"]):
         return ["גרם", "כפות", "אריזה / יחידה"], 0
         
-    # 8. בשרים ודגים - גרם או יחידות
     if any(k in item_name for k in ["חזה עוף", "שניצל", "סלמון", "סטייק", "פרגיות", "בקר", "דניס", "מושט", "בקלה", "שרימפס"]):
         return ["גרם", "יחידות"], 0
         
-    # ברירת מחדל כללית
     return ["גרם", "כפות", "יחידות"], 0
 
 def calc_grams(item_name, unit, raw_amount):
@@ -568,8 +556,8 @@ selected_date = st.sidebar.date_input("בחר תאריך", date.today()).strftim
 goals_res = supabase.table("daily_goals").select("*").eq("user_id", user_id).eq("date", selected_date).execute()
 user_goals = goals_res.data[0] if goals_res.data else {"target_calories": 2200, "target_protein": 170, "target_carbs": 220, "target_fat": 60}
 
-# יצירת הלשוניות
-tab_log, tab_auto_add, tab_workouts, tab_camera, tab_ai, tab_settings = st.tabs([t["tab_log"], t["tab_search"], t["tab_workouts"], t["tab_camera"], t["tab_ai"], t["tab_settings"]])
+# יצירת הלשוניות (כולל לשונית היסטוריה ויומן חדשה)
+tab_log, tab_auto_add, tab_workouts, tab_history, tab_camera, tab_ai, tab_settings = st.tabs([t["tab_log"], t["tab_search"], t["tab_workouts"], t["tab_history"], t["tab_camera"], t["tab_ai"], t["tab_settings"]])
 
 with tab_auto_add:
     st.subheader("🔍 חיפוש והוספת מאכל או ארוחה שלמה (כולל חיפוש חופשי של כל מוצר בסופר)")
@@ -613,7 +601,7 @@ with tab_auto_add:
                 st.warning("נא לבחור מאכל מהרשימה או להקליד חיפוש חופשי.")
 
     else:
-        st.info("בחר עד 4 מרכיבים שונים כדי להרכיב ארוחה שלמה ולהוסיף הكل בלחיצה אחת:")
+        st.info("בחר עד 4 מרכיבים שונים כדי להרכיב ארוחה שלמה ולהוסיף הכל בלחיצה אחת:")
         
         def render_meal_item(idx):
             item_sel = st.selectbox(f"רכיב {idx}", options=["-- ללא --"] + sorted(list(LOCAL_DATABASE.keys())), key=f"meal_item_{idx}")
@@ -658,7 +646,6 @@ with tab_auto_add:
                         
             if added_count > 0:
                 st.success(f"✅ הצלחה! הארוחה המלאה הכוללת {added_count} רכיבים התוספה בהצלחה לארוחת {meal_type_sel}!")
-                # איפוס הבחירות כדי לנקות את השדות מיד לאחר ההוספה
                 for k in list(st.session_state.keys()):
                     if "meal_item_" in k:
                         st.session_state[k] = "-- ללא --"
@@ -718,6 +705,89 @@ with tab_workouts:
                 st.rerun()
     else:
         st.info("אין אימונים מתועדים לתאריך זה.")
+
+# --- מסך היסטוריה ויומן חדש ---
+with tab_history:
+    st.subheader("📅 יومان היסטוריה ובדיקת עמידה ביעדים לפי תאריך")
+    history_date = st.date_input("בחר תאריך לבדיקה:", date.today(), key="history_calendar_picker")
+    history_date_str = history_date.strftime("%Y-%m-%d")
+
+    st.markdown(f"### סיכום עבור תאריך: **{history_date_str}**")
+
+    # שליפת נתוני תזונה לתאריך הנבחר
+    hist_log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", history_date_str).execute()
+    hist_entries = hist_log_res.data
+
+    h_cal = sum(e["food_items"]["calories_per_100g"] * e["amount_grams"] / 100.0 for e in hist_entries)
+    h_p = sum(e["food_items"]["protein_per_100g"] * e["amount_grams"] / 100.0 for e in hist_entries)
+    h_c = sum(e["food_items"]["carbs_per_100g"] * e["amount_grams"] / 100.0 for e in hist_entries)
+    h_f = sum(e["food_items"]["fat_per_100g"] * e["amount_grams"] / 100.0 for e in hist_entries)
+
+    # שליפת אימונים לתאריך הנבחר
+    hist_workouts_res = supabase.table("workouts").select("*").eq("user_id", user_id).eq("date", history_date_str).execute()
+    hist_workouts = hist_workouts_res.data
+    h_burned = sum(w["calories_burned"] for w in hist_workouts) if hist_workouts else 0
+
+    # שליפת יעדים לתאריך
+    hist_goals_res = supabase.table("daily_goals").select("*").eq("user_id", user_id).eq("date", history_date_str).execute()
+    h_goals = hist_goals_res.data[0] if hist_goals_res.data else user_goals
+
+    hc1, hc2, hc3, hc4 = st.columns(4)
+    with hc1:
+        st.markdown(f"""
+        <div class="ios-widget">
+            <h4 style="margin: 0 0 10px 0;">🔥 קלוריות שאכלת</h4>
+            <h2 style="margin: 0 0 10px 0; font-size: 1.8em;">{round(h_cal, 1)}</h2>
+            <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">יעד: {h_goals['target_calories']} | אימונים: -{h_burned}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with hc2:
+        st.markdown(f"""
+        <div class="ios-widget">
+            <h4 style="margin: 0 0 10px 0;">🥩 חלבון</h4>
+            <h2 style="margin: 0 0 10px 0; font-size: 1.8em;">{round(h_p, 1)}g</h2>
+            <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">יעד: {h_goals['target_protein']}g</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with hc3:
+        st.markdown(f"""
+        <div class="ios-widget">
+            <h4 style="margin: 0 0 10px 0;">🍞 פחמימות</h4>
+            <h2 style="margin: 0 0 10px 0; font-size: 1.8em;">{round(h_c, 1)}g</h2>
+            <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">יעד: {h_goals['target_carbs']}g</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with hc4:
+        st.markdown(f"""
+        <div class="ios-widget">
+            <h4 style="margin: 0 0 10px 0;">🥑 שומנים</h4>
+            <h2 style="margin: 0 0 10px 0; font-size: 1.8em;">{round(h_f, 1)}g</h2>
+            <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">יעד: {h_goals['target_fat']}g</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.divider()
+
+    # חיווי אימונים לתאריך
+    st.subheader("🏋️ סטטוס אימונים בתאריך זה:")
+    if hist_workouts:
+        st.success(f"✅ התאמנת ב-{history_date_str}! בוצעו {len(hist_workouts)} אימונים ששרפו סך הכל **{h_burned} קלוריות**.")
+        for hw in hist_workouts:
+            st.write(- f"• **{hw['workout_type']}** | משך: {hw['duration_minutes']} דקות | שריפה: {hw['calories_burned']} קל'")
+    else:
+        st.warning(f"⚠️ לא דווחו אימונים בתאריך {history_date_str}.")
+
+    st.divider()
+
+    # חיווי עמידה ביעדי תזונה
+    st.subheader("🎯 סטטוס עמידה ביעדי תזונה:")
+    cal_diff = h_cal - h_goals['target_calories']
+    if abs(cal_diff) <= 150:
+        st.info(f"🎯 הצלחה מעולה! היית קרוב מאוד ליעד הקלורי (הפרש של {round(cal_diff)} קלוריות).")
+    elif cal_diff > 150:
+        st.warning(f"⚠️ חריגה מהיעד הקלורי בכ-{round(cal_diff)} קלוריות.")
+    else:
+        st.info(f"💡 היית מתחת ליעד הקלורי בכ-{round(abs(cal_diff))} קלוריות.")
 
 with tab_camera:
     st.subheader("📸 סריקת תמונה")
