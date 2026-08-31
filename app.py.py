@@ -1,4 +1,5 @@
 import streamlit as st
+import requests
 from datetime import date
 from supabase import create_client, Client
 
@@ -12,6 +13,31 @@ def init_supabase() -> Client:
 supabase = init_supabase()
 
 st.set_page_config(page_title="מחשבון תזונה ויומן אכילה", layout="wide")
+
+# --- Helper: Search Open Food Facts API ---
+def fetch_nutrition_data(query):
+    try:
+        url = f"https://world.openfoodfacts.org/cgi/search.pl?search_terms={query}&search_simple=1&action=process&json=1"
+        res = requests.get(url, timeout=5).json()
+        products = res.get("products", [])
+        if products:
+            p = products[0]
+            nutriments = p.get("nutriments", {})
+            cal = nutriments.get("energy-kcal_100g", nutriments.get("energy-kcal_value", 0))
+            protein = nutriments.get("proteins_100g", nutriments.get("proteins_value", 0))
+            carbs = nutriments.get("carbohydrates_100g", nutriments.get("carbohydrates_value", 0))
+            fat = nutriments.get("fat_100g", nutriments.get("fat_value", 0))
+            name = p.get("product_name_he", p.get("product_name", query))
+            return {
+                "name": name,
+                "cal": float(cal or 0),
+                "p": float(protein or 0),
+                "c": float(carbs or 0),
+                "f": float(fat or 0)
+            }
+    except Exception as e:
+        st.warning(f"לא ניתן לשלוף נתונים אוטומטית: {e}")
+    return None
 
 # --- Authentication Logic ---
 if "user" not in st.session_state:
@@ -42,7 +68,6 @@ def logout_user():
 # --- Auth UI ---
 if not st.session_state["user"]:
     st.title("🔐 התחברות למערכת התזונה")
-    
     auth_tab1, auth_tab2 = st.tabs(["התחברות", "הרשמה"])
     
     with auth_tab1:
@@ -71,7 +96,7 @@ st.title("🥗 מחשבון תזונה ויומן אכילה אישי")
 st.sidebar.header("📅 תאריך ויעדים")
 selected_date = st.sidebar.date_input("בחר תאריך", date.today()).strftime("%Y-%m-%d")
 
-# Fetch goals from Supabase
+# Fetch goals
 goals_res = supabase.table("daily_goals").select("*").eq("user_id", user_id).eq("date", selected_date).execute()
 user_goals = goals_res.data[0] if goals_res.data else {"target_calories": 2200, "target_protein": 170, "target_carbs": 220, "target_fat": 60}
 
@@ -92,65 +117,53 @@ with st.sidebar.expander("הגדר/עדכן יעדים ליום זה"):
         st.success("היעדים נשמרו!")
         st.rerun()
 
-tab_log, tab_add_food = st.tabs(["📝 יומן אכילה", "➕ הוספת מאכל למאגר"])
+tab_log, tab_auto_add = st.tabs(["📝 יומן אכילה", "🔍 חיפוש והוספה מהירה"])
 
-with tab_add_food:
-    st.subheader("הוספת מאכל חדש למאגר האישי שלך (ל-100 גרם)")
-    with st.form("add_food_form"):
-        food_name = st.text_input("שם המאכל")
-        col_a, col_b = st.columns(2)
-        with col_a:
-            cal = st.number_input("קלוריות ל-100ג", min_value=0.0, step=1.0)
-            p = st.number_input("חלבון ל-100ג", min_value=0.0, step=0.1)
-        with col_b:
-            c = st.number_input("פחמימות ל-100ג", min_value=0.0, step=0.1)
-            f = st.number_input("שומן ל-100ג", min_value=0.0, step=0.1)
-            
-        submitted = st.form_submit_button("שמור מאכל")
-        if submitted and food_name:
-            supabase.table("food_items").insert({
-                "user_id": user_id,
-                "name": food_name,
-                "calories_per_100g": cal,
-                "protein_per_100g": p,
-                "carbs_per_100g": c,
-                "fat_per_100g": f
-            }).execute()
-            st.success(f"המאכל '{food_name}' נשמר בהצלחה!")
+with tab_auto_add:
+    st.subheader("חפש מאכל ברשת (למשל: חזה עוף, אורז, בננה, טונה)")
+    
+    search_q = st.text_input("שם המאכל לחיפוש")
+    amount_input = st.number_input("כמות בגרמים", min_value=1.0, value=100.0, step=10.0)
+    meal_type_sel = st.selectbox("לאיזו ארוחה?", ["בוקר", "צהריים", "ערב", "נשנוש / אימון"])
+
+    if st.button("חפש והוסף ליומן"):
+        if search_q:
+            data = fetch_nutrition_data(search_q)
+            if data:
+                # Save item to DB if not exists
+                item_name = data["name"]
+                existing = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", item_name).execute()
+                
+                if existing.data:
+                    food_id = existing.data[0]["id"]
+                else:
+                    new_item = supabase.table("food_items").insert({
+                        "user_id": user_id,
+                        "name": item_name,
+                        "calories_per_100g": data["cal"],
+                        "protein_per_100g": data["p"],
+                        "carbs_per_100g": data["c"],
+                        "fat_per_100g": data["f"]
+                    }).execute()
+                    food_id = new_item.data[0]["id"]
+
+                # Log food entry
+                supabase.table("food_log").insert({
+                    "user_id": user_id,
+                    "date": selected_date,
+                    "food_id": food_id,
+                    "amount_grams": amount_input,
+                    "meal_type": meal_type_sel
+                }).execute()
+                
+                st.success(f"התווסף בהצלחה! ({item_name} - {amount_input} גרם)")
+                st.rerun()
+            else:
+                st.error("לא נמאסו נתונים תזונתיים עבור מאכל זה. נסה לחפש באנגלית (למשל: Chicken breast).")
 
 with tab_log:
     st.subheader(f"תיעוד ארוחות לתאריך: {selected_date}")
     
-    foods_res = supabase.table("food_items").select("*").eq("user_id", user_id).order("name").execute()
-    foods = foods_res.data
-    
-    if not foods:
-        st.warning("אין עדיין מאכלים במאגר שלך. עבור ללשונית 'הוספת מאכל' כדי להתחיל!")
-    else:
-        food_dict = {f["name"]: f for f in foods}
-        
-        col1, col2, col3, col4 = st.columns([3, 2, 2, 2])
-        with col1:
-            selected_food_name = st.selectbox("בחר מאכל", list(food_dict.keys()))
-        with col2:
-            amount_g = st.number_input("כמות בגרמים", min_value=1.0, value=100.0, step=10.0)
-        with col3:
-            meal_type = st.selectbox("ארוחה", ["בוקר", "צהריים", "ערב", "נשנוש / אימון"])
-        with col4:
-            st.write("")
-            st.write("")
-            if st.button("הוסף ליומן"):
-                food_obj = food_dict[selected_food_name]
-                supabase.table("food_log").insert({
-                    "user_id": user_id,
-                    "date": selected_date,
-                    "food_id": food_obj["id"],
-                    "amount_grams": amount_g,
-                    "meal_type": meal_type
-                }).execute()
-                st.rerun()
-
-    # Get log entries
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
     entries = log_res.data
     
