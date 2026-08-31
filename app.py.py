@@ -205,8 +205,13 @@ st.markdown(
         border-color: {widget_border} !important;
     }}
 
-    /* תיקון ספציפי לשדות בחירת תאריך (Date Input) החיצוניים והפנימיים */
-    input[type="date"], input[type="text"], .stDateInput input {{
+    /* תיקון ישיר וממוקד לתיבת בחירת התאריך (Date Input) בכל מצב לילה */
+    div[data-baseweb="datepicker"], div[data-baseweb="input"], .stDateInput, div[aria-label*="בחר תאריך"], div[aria-label*="Date"] {{
+        background-color: {input_bg_color} !important;
+        color: {input_text_color} !important;
+    }}
+
+    input[type="date"], input[type="text"], .stDateInput input, div[data-baseweb="datepicker"] input {{
         background-color: {input_bg_color} !important;
         color: {input_text_color} !important;
         -webkit-text-fill-color: {input_text_color} !important;
@@ -214,8 +219,7 @@ st.markdown(
 
     /* תיקון גורף לכל פופאפ, לוח שנה, תפריט נפתח (Selectbox Dropdown) ושכבות תפריט */
     div[data-baseweb="popover"], div[data-baseweb="calendar"], div[data-baseweb="menu"], 
-    div[role="dialog"], div[role="application"], ul[data-baseweb="menu"], div[role="listbox"],
-    div[data-baseweb="datepicker"] {{
+    div[role="dialog"], div[role="application"], ul[data-baseweb="menu"], div[role="listbox"] {{
         background-color: {input_bg_color} !important;
         color: {input_text_color} !important;
         border: 1px solid {widget_border} !important;
