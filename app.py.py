@@ -1083,7 +1083,7 @@ with tab_camera:
             st.success("הארוחה נוספה!")
             st.rerun()
 
-# --- מסך יומן אכילה ראשי (כולל מעקב מים קומפקטי ומעוצב) ---
+# --- מסך יומן אכילה ראשי (כולל מעקב מים קומפקטי ומעוצב באלגנטיות) ---
 with tab_log:
     st.subheader(f"תיעוד ארוחות ושתייה לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
@@ -1102,32 +1102,31 @@ with tab_log:
 
     st.divider()
     
-    # --- ווידג'ט מעקב מים קומפקטי ומעוצב ---
-    c_water_info, c_water_btns = st.columns([1.3, 1.7])
-    with c_water_info:
-        st.markdown(f"""
-        <div class="ios-widget" style="min-height: 90px; padding: 12px; margin-bottom: 10px; background: linear-gradient(135deg, rgba(0, 122, 255, 0.08), rgba(88, 86, 214, 0.08)); border: 1px solid rgba(0, 122, 255, 0.25);">
-            <h4 style="color: #007AFF; font-size: 1.05em !important; margin-bottom: 2px !important;">💧 מעקב מים יומי</h4>
-            <h2 style="font-size: 1.6em !important; margin: 2px 0 !important;">{int(total_water_ml)} מ''ל</h2>
-            <p style="font-size: 0.85em !important;">({water_glasses} כוסות | יעד: 3,000 מ''ל)</p>
-        </div>
-        """, unsafe_allow_html=True)
-    with c_water_btns:
-        st.markdown("<div style='font-size: 0.9em; font-weight: bold; margin-bottom: 4px;'>הוספה מהירה של מים:</div>", unsafe_allow_html=True)
-        wb1, wb2, wb3 = st.columns(3)
-        if wb1.button("+250 מ\"ל"):
+    # --- ווידג'ט מעקב מים קומפקטי ומעוצב עם כפתורי פעולה מותאמים ---
+    st.markdown(f"""
+    <div class="ios-widget" style="min-height: 80px; padding: 14px; margin-bottom: 12px; background: linear-gradient(135deg, rgba(0, 122, 255, 0.08), rgba(88, 86, 214, 0.08)); border: 1px solid rgba(0, 122, 255, 0.25);">
+        <h4 style="color: #007AFF; font-size: 1.1em !important; margin-bottom: 2px !important;">💧 מעקב מים יומי</h4>
+        <h2 style="font-size: 1.7em !important; margin: 2px 0 !important;">{int(total_water_ml)} מ''ל &nbsp;<span style="font-size: 0.6em; opacity: 0.8; font-weight: normal;">({water_glasses} כוסות | יעד: 3,000 מ''ל)</span></h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+    wb1, wb2, wb3 = st.columns(3)
+    with wb1:
+        if st.button("➕ כוס (250 מ\"ל)", use_container_width=True):
             w_item_name = "מים (כוס / 250 מ\"ל)"
             existing_w = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", w_item_name).execute()
             w_food_id = existing_w.data[0]["id"] if existing_w.data else supabase.table("food_items").insert({"user_id": user_id, "name": w_item_name, "calories_per_100g": 0.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 0.0}).execute().data[0]["id"]
             supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": w_food_id, "amount_grams": 250.0, "meal_type": t["breakfast"]}).execute()
             st.rerun()
-        if wb2.button("+500 מ\"ל"):
+    with wb2:
+        if st.button("➕ בקבוק (500 מ\"ל)", use_container_width=True):
             w_item_name = "בקבוק מים מינרליים (500 מ\"ל)"
             existing_w = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", w_item_name).execute()
             w_food_id = existing_w.data[0]["id"] if existing_w.data else supabase.table("food_items").insert({"user_id": user_id, "name": w_item_name, "calories_per_100g": 0.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 0.0}).execute().data[0]["id"]
             supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": w_food_id, "amount_grams": 500.0, "meal_type": t["lunch"]}).execute()
             st.rerun()
-        if wb3.button("+1.5 ליטר"):
+    with wb3:
+        if st.button("➕ ענק (1.5 ליטר)", use_container_width=True):
             w_item_name = "בקבוק מים גדול (1.5 ליטר)"
             existing_w = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", w_item_name).execute()
             w_food_id = existing_w.data[0]["id"] if existing_w.data else supabase.table("food_items").insert({"user_id": user_id, "name": w_item_name, "calories_per_100g": 0.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 0.0}).execute().data[0]["id"]
