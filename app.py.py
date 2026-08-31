@@ -207,10 +207,10 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# --- מאגר מובנה ענק ומקיף (כולל משקאות חלבון 40g, 25g ואבקות) ---
+# --- מאגר מובנה ענק ומקיף ---
 LOCAL_DATABASE = {
-    "משקה חלבון יטבתה PRO 40g": {"cal": 64.0, "p": 16.0, "c": 3.2, "f": 0.4}, # מחושב לפי 100 מ"ל (בקבוק 250 מ"ל = 160 קלוריות, 40 גרם חלבון)
-    "משקה חלבון יטבתה PRO 25g": {"cal": 52.0, "p": 10.0, "c": 3.8, "f": 0.5}, # בקבוק 250 מ"ל = 130 קלוריות, 25 גרם חלבון
+    "משקה חלבון יטבתה PRO 40g": {"cal": 64.0, "p": 16.0, "c": 3.2, "f": 0.4},
+    "משקה חלבון יטבתה PRO 25g": {"cal": 52.0, "p": 10.0, "c": 3.8, "f": 0.5},
     "משקה חלבון תנובה GO 25g": {"cal": 50.0, "p": 10.0, "c": 4.0, "f": 0.4},
     "משקה חלבון שטראוס 25g": {"cal": 50.0, "p": 10.0, "c": 4.0, "f": 0.5},
     "מעדן מילקי פרו": {"cal": 85.0, "p": 10.0, "c": 8.0, "f": 1.5},
@@ -452,15 +452,17 @@ with tab_auto_add:
     
     custom_search = st.text_input("או הקלד שם מאכל אחר לחיפוש חופשי (אם לא נמצא ברשימה):", key="custom_food_input")
     
-    # זיהוי סוג המאכל כדי להתאים את יחידות המידה בצורה חכמה
+    # זיהוי סוג המאכל והגדרת ברירת מחדל חכמה (דיפולט)
     active_search_name = custom_search.strip() if custom_search.strip() else (selected_from_db if selected_from_db != "-- בחר מאכל מהרשימה (הקלד לסינון) --" else "")
     
     if any(k in active_search_name for k in ["אורז", "פסטה", "קוסקוס", "בורגול", "קינואה", "כוסמת", "שיבולת שועל"]):
-        unit_options = ["גרם", "כפות", "כפיות"]
-    elif any(k in active_search_name for k in ["טונה", "קוטג'", "גבינה", "יוגורט", "חלב", "משקה חלבון", "אבקת חלבון"]):
-        unit_options = ["גרם", "מ\"ל / גרם", "בקבוק / יחידה", "סקופ"]
+        unit_options = ["כפות", "גרם", "כפיות"] # דיפולט: כפות
+    elif any(k in active_search_name for k in ["משקה חלבון", "תנובה", "יטבתה", "שטראוס"]):
+        unit_options = ["בקבוק / יחידה", "גרם"] # דיפולט: בקבוק / יחידה
+    elif any(k in active_search_name for k in ["טונה", "קוטג'", "גבינה", "יוגורט", "חלב", "אבקת חלבון"]):
+        unit_options = ["גרם", "בקבוק / יחידה", "כפות", "סקופ"]
     elif any(k in active_search_name for k in ["עגבנייה", "מלפפון", "בננה", "תפוח", "תפוז", "אגס", "ביצה", "פיתה", "לחם"]):
-        unit_options = ["גרם", "יחידות"]
+        unit_options = ["יחידות", "גרם"] # דיפולט: יחידות
     else:
         unit_options = ["גרם", "כפות", "יחידות"]
 
@@ -468,11 +470,12 @@ with tab_auto_add:
     with col_u1:
         chosen_unit = st.selectbox(t["unit_type"], unit_options, key="food_unit_selection")
     with col_u2:
-        raw_amount = st.number_input(t["amount_val"], min_value=0.1, value=1.0 if chosen_unit in ["בקבוק / יחידה", "סקופ", "יחידות"] else 100.0, step=1.0 if chosen_unit != "גרם" else 10.0)
+        default_val = 1.0 if chosen_unit in ["בקבוק / יחידה", "סקופ", "יחידות", "כפות"] else 100.0
+        raw_amount = st.number_input(t["amount_val"], min_value=0.1, value=default_val, step=1.0 if chosen_unit != "גרם" else 10.0)
 
     # המרת הכמות לצורך חישוב תזונתי מדויק מאחורי הקלעים
     if chosen_unit == "כפות":
-        amount_input = raw_amount * 15.0
+        amount_input = raw_amount * 15.0 # כף הגשה סטנדרטית מכילה כ-15 גרם
     elif chosen_unit == "כפיות":
         amount_input = raw_amount * 5.0
     elif chosen_unit == "בקבוק / יחידה":
@@ -485,7 +488,7 @@ with tab_auto_add:
         else:
             amount_input = raw_amount * 100.0
     elif chosen_unit == "סקופ":
-        amount_input = raw_amount * 30.0 # סקופ אבקת חלבון סטנדרטי שוקל כ-30 גרם
+        amount_input = raw_amount * 30.0
     elif chosen_unit == "יחידות":
         if "ביצה" in active_search_name:
             amount_input = raw_amount * 50.0
