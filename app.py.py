@@ -33,7 +33,7 @@ TRANSLATIONS = {
         "goal": "מה המטרה שלך?",
         "calc_goals": "חשב יעדים ושמור",
         "logout": "התנתק",
-        "connected_as": "מחובר ك:",
+        "connected_as": "מחובר כ:",
         "date_header": "📅 תאריך ויעדים",
         "tab_log": "📝 יומן אכילה",
         "tab_search": "🔍 חיפוש והוספה",
@@ -154,12 +154,10 @@ else:
 
 bg_color = "#0e1117" if is_dark else "#f8f9fa"
 text_color = "#ffffff" if is_dark else "#111111"
-widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(255, 255, 255, 0.9)"
+widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
 widget_border = "rgba(255, 255, 255, 0.1)" if is_dark else "rgba(0, 0, 0, 0.08)"
-btn_text_color = "#ffffff" if is_dark else "#111111"
-flip_bg = "rgba(30, 144, 255, 0.15)" if is_dark else "rgba(30, 144, 255, 0.08)"
 
-# --- Clean CSS Styling (הפיכת כפתורי הסטרימליט לכרטיסיות וידג'ט ענקיות ויפהפיות) ---
+# --- Clean CSS Styling ---
 st.markdown(
     f"""
     <style>
@@ -169,36 +167,17 @@ st.markdown(
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }}
     
-    /* עיצוב כפתורי הווידג'טים כך שיהיו בדיוק כמו הריבועים שרצית */
-    div.stButton > button {{
-        background-color: {widget_bg} !important;
+    .ios-widget {{
+        background: {widget_bg};
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
-        border: 1px solid {widget_border} !important;
-        border-radius: 20px !important;
-        padding: 25px 15px !important;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.12) !important;
-        width: 100% !important;
-        height: 140px !important;
-        text-align: center !important;
-        color: {btn_text_color} !important;
-        transition: all 0.3s ease !important;
-    }}
-    
-    div.stButton > button:hover {{
-        border-color: #1e90ff !important;
-        transform: translateY(-3px);
-        box-shadow: 0 12px 40px 0 rgba(30, 144, 255, 0.2) !important;
-    }}
-    
-    .flipped-card {{
-        background: {flip_bg};
-        border: 2px solid #1e90ff;
+        border: 1px solid {widget_border};
         border-radius: 20px;
-        padding: 25px;
-        margin-top: 15px;
-        margin-bottom: 20px;
-        box-shadow: 0 8px 32px 0 rgba(30, 144, 255, 0.2);
+        padding: 20px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+        margin-bottom: 10px;
+        text-align: center;
+        min-height: 140px;
     }}
     
     .stTabs [data-baseweb="tab-list"] {{
@@ -558,7 +537,7 @@ with tab_camera:
             st.success("הארוחה נוספה!")
             st.rerun()
 
-# --- מסך יומן אכילה ראשי שבו כל כרטיסיית וידג'ט היא עצמה כפתור ענק לחיץ ---
+# --- מסך יומן אכילה ראשי עם הווידג'טים הגדולים והקלאסיים במלוא הדרם ---
 with tab_log:
     st.subheader(f"תיעוד ארוחות לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
@@ -574,115 +553,41 @@ with tab_log:
 
     st.divider()
     st.subheader(t["daily_summary"])
-    st.caption("💡 לחץ ישירות על כרטיסיית הווידג'ט (קלוריות, חלבון, פחמימות או שומנים) כדי להציג את הפירוט וממה הוא מורכב באותו היום!")
 
-    if "flipped_card" not in st.session_state:
-        st.session_state["flipped_card"] = None
-
-    # יצירת כרטיסיות הווידג'ט הענקיות כך שהן עצמן כפתורים לחיצים בדיוק כמו שרצית
+    # הצגת 4 הווידג'טים הגדולים והמושלמים בדיוק כמו שביקשת
     col1, col2, col3, col4 = st.columns(4)
-    
     with col1:
-        btn_cal_label = f"🔥 קלוריות\n\n{round(consumed_cal, 1)} / {user_goals['target_calories']}"
-        if st.button(btn_cal_label, key="card_cal"):
-            st.session_state["flipped_card"] = "cal" if st.session_state["flipped_card"] != "cal" else None
-            st.rerun()
-            
+        st.markdown(f"""
+        <div class="ios-widget">
+            <h4 style="margin: 0 0 10px 0;">🔥 קלוריות</h4>
+            <h2 style="margin: 0 0 10px 0; font-size: 1.8em;">{round(consumed_cal, 1)}</h2>
+            <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">יעד: {user_goals['target_calories']} | אימונים: -{total_burned_cals}</p>
+        </div>
+        """, unsafe_allow_html=True)
     with col2:
-        btn_p_label = f"🥩 חלבון\n\n{round(consumed_p, 1)}g / {user_goals['target_protein']}g"
-        if st.button(btn_p_label, key="card_protein"):
-            st.session_state["flipped_card"] = "protein" if st.session_state["flipped_card"] != "protein" else None
-            st.rerun()
-            
+        st.markdown(f"""
+        <div class="ios-widget">
+            <h4 style="margin: 0 0 10px 0;">🥩 חלבון</h4>
+            <h2 style="margin: 0 0 10px 0; font-size: 1.8em;">{round(consumed_p, 1)}g</h2>
+            <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">יעד: {user_goals['target_protein']}g</p>
+        </div>
+        """, unsafe_allow_html=True)
     with col3:
-        btn_c_label = f"🍞 פחמימות\n\n{round(consumed_c, 1)}g / {user_goals['target_carbs']}g"
-        if st.button(btn_c_label, key="card_carbs"):
-            st.session_state["flipped_card"] = "carbs" if st.session_state["flipped_card"] != "carbs" else None
-            st.rerun()
-            
+        st.markdown(f"""
+        <div class="ios-widget">
+            <h4 style="margin: 0 0 10px 0;">🍞 פחמימות</h4>
+            <h2 style="margin: 0 0 10px 0; font-size: 1.8em;">{round(consumed_c, 1)}g</h2>
+            <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">יעד: {user_goals['target_carbs']}g</p>
+        </div>
+        """, unsafe_allow_html=True)
     with col4:
-        btn_f_label = f"🥑 שומנים\n\n{round(consumed_f, 1)}g / {user_goals['target_fat']}g"
-        if st.button(btn_f_label, key="card_fat"):
-            st.session_state["flipped_card"] = "fat" if st.session_state["flipped_card"] != "fat" else None
-            st.rerun()
-
-    # הצגת הצד האחורי (הפירוט המלא) מתחת לכרטיסיות כאשר לוחצים על אחת מהן
-    if st.session_state["flipped_card"]:
-        fc = st.session_state["flipped_card"]
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        with st.container():
-            if fc == "protein":
-                st.markdown('<div class="flipped-card">', unsafe_allow_html=True)
-                st.markdown("### 🥩 פירוט צריכת החלבון היומית שלך")
-                if entries:
-                    found_any = False
-                    for e in entries:
-                        p_val = e["food_items"]["protein_per_100g"] * e["amount_grams"] / 100.0
-                        if p_val > 0:
-                            found_any = True
-                            st.markdown(f"• **{e['food_items']['name']}** ({e['amount_grams']} גרם) — תרם **{round(p_val, 1)}g** חלבון (בארוחת *{e['meal_type']}*)")
-                    if not found_any:
-                        st.info("לא נמצאו מאכלים עתירי חלבון להיום.")
-                else:
-                    st.info("אין נתונים להיום.")
-                if st.button("סגור פירוט ✕", key="close_flip_p"):
-                    st.session_state["flipped_card"] = None
-                    st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
-                
-            elif fc == "carbs":
-                st.markdown('<div class="flipped-card">', unsafe_allow_html=True)
-                st.markdown("### 🍞 פירוט צריכת הפחמימות היומית שלך")
-                if entries:
-                    found_any = False
-                    for e in entries:
-                        c_val = e["food_items"]["carbs_per_100g"] * e["amount_grams"] / 100.0
-                        if c_val > 0:
-                            found_any = True
-                            st.markdown(f"• **{e['food_items']['name']}** ({e['amount_grams']} גרם) — תרם **{round(c_val, 1)}g** פחמימה (בארוחת *{e['meal_type']}*)")
-                    if not found_any:
-                        st.info("לא נמצאו מאכלים עתירי פחמימות להיום.")
-                else:
-                    st.info("אין נתונים להיום.")
-                if st.button("סגור פירוט ✕", key="close_flip_c"):
-                    st.session_state["flipped_card"] = None
-                    st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
-
-            elif fc == "fat":
-                st.markdown('<div class="flipped-card">', unsafe_allow_html=True)
-                st.markdown("### 🥑 פירוט צריכת השומנים היומית שלך")
-                if entries:
-                    found_any = False
-                    for e in entries:
-                        f_val = e["food_items"]["fat_per_100g"] * e["amount_grams"] / 100.0
-                        if f_val > 0:
-                            found_any = True
-                            st.markdown(f"• **{e['food_items']['name']}** ({e['amount_grams']} גרם) — תרם **{round(f_val, 1)}g** שומן (בארוחת *{e['meal_type']}*)")
-                    if not found_any:
-                        st.info("לא נמצאו מאכלים מכילים שומן להיום.")
-                else:
-                    st.info("אין נתונים להיום.")
-                if st.button("סגור פירוט ✕", key="close_flip_f"):
-                    st.session_state["flipped_card"] = None
-                    st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
-
-            elif fc == "cal":
-                st.markdown('<div class="flipped-card">', unsafe_allow_html=True)
-                st.markdown("### 🔥 פירוט מאזן הקלוריות היומי שלך")
-                st.write(f"• סך קלוריות שנאכלו: **{round(consumed_cal, 1)}**")
-                st.write(f"• סך קלוריות שנשרפו באימונים: **-{total_burned_cals}**")
-                st.markdown("---")
-                if entries:
-                    for e in entries:
-                        cal_val = e["food_items"]["calories_per_100g"] * e["amount_grams"] / 100.0
-                        st.markdown(f"• **{e['food_items']['name']}** ({e['amount_grams']} גרם): **+{round(cal_val, 1)}** קלוריות (ארוחת *{e['meal_type']}*)")
-                if st.button("סגור פירוט ✕", key="close_flip_cal"):
-                    st.session_state["flipped_card"] = None
-                    st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="ios-widget">
+            <h4 style="margin: 0 0 10px 0;">🥑 שומנים</h4>
+            <h2 style="margin: 0 0 10px 0; font-size: 1.8em;">{round(consumed_f, 1)}g</h2>
+            <p style="margin: 0; font-size: 0.85em; opacity: 0.8;">יעד: {user_goals['target_fat']}g</p>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.divider()
     
