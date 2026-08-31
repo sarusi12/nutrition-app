@@ -171,8 +171,6 @@ bg_color = "#0e1117" if is_dark else "#f8f9fa"
 text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
 widget_border = "rgba(255, 255, 255, 0.15)" if is_dark else "rgba(0, 0, 0, 0.08)"
-tab_inactive_bg = "rgba(255, 255, 255, 0.03)" if is_dark else "rgba(0, 0, 0, 0.04)"
-tab_active_bg = "rgba(0, 122, 255, 0.25)" if is_dark else "rgba(0, 122, 255, 0.15)"
 
 is_rtl = "Hebrew" in selected_lang or "עברית" in selected_lang
 dir_val = "rtl" if is_rtl else "ltr"
@@ -216,48 +214,29 @@ st.markdown(
         direction: {dir_val} !important;
     }}
 
-    /* תיקון קריטי לטאבים (לשוניות) במצב לילה ויום */
-    .stTabs [data-baseweb="tab-list"] {{
-        direction: {dir_val};
-        gap: 6px;
-        background-color: {widget_bg};
-        padding: 6px;
-        border-radius: 16px;
-        display: -webkit-box;
-        display: -ms-flexbox;
-        display: flex;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        margin-bottom: 20px;
-        border: 1px solid {widget_border};
+    /* פתרון מושלם לניווט (במקום st.tabs הרגיש לבעיות של סטרימלייט) */
+    div.row-widget.stRadio > div {{
+        background-color: {widget_bg} !important;
+        padding: 10px !important;
+        border-radius: 16px !important;
+        border: 1px solid {widget_border} !important;
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        justify-content: center !important;
     }}
-    
-    .stTabs [data-baseweb="tab"] {{
-        border-radius: 12px;
-        padding: 10px 16px !important;
-        color: {text_color} !important;
-        background-color: {tab_inactive_bg} !important;
-        white-space: nowrap;
-        font-size: 1.05em !important;
+    div.row-widget.stRadio > div label {{
+        background-color: rgba(0, 122, 255, 0.1) !important;
+        padding: 8px 14px !important;
+        border-radius: 10px !important;
+        border: 1px solid rgba(0, 122, 255, 0.3) !important;
+        cursor: pointer !important;
         font-weight: 700 !important;
-        -ms-flex-negative: 0;
-        flex-shrink: 0;
-        border: 1px solid transparent;
-    }}
-
-    .stTabs [data-baseweb="tab"]:hover {{
-        background-color: {widget_border} !important;
-    }}
-
-    .stTabs [data-baseweb="tab"][aria-selected="true"] {{
-        background-color: {tab_active_bg} !important;
         color: {text_color} !important;
-        border: 1px solid rgba(0, 122, 255, 0.6) !important;
     }}
-    
-    .stTabs [data-baseweb="tab"] p,
-    .stTabs [data-baseweb="tab"] div {{
-        color: {text_color} !important;
+    div.row-widget.stRadio > div label:hover {{
+        background-color: rgba(0, 122, 255, 0.25) !important;
     }}
 
     /* תפריטי בחירה נפתחים (Selectbox / Dropdown) במצב לילה */
@@ -864,15 +843,18 @@ selected_date = st.sidebar.date_input("בחר תאריך", date.today()).strftim
 goals_res = supabase.table("daily_goals").select("*").eq("user_id", user_id).eq("date", selected_date).execute()
 user_goals = goals_res.data[0] if goals_res.data else {"target_calories": 2200, "target_protein": 170, "target_carbs": 220, "target_fat": 60}
 
-# יצירת הלשוניות (כולל לשונית נפרדת ועצמאית למעקב מים)
-tab_log, tab_auto_add, tab_water, tab_workouts, tab_history, tab_photos, tab_camera, tab_ai, tab_settings = st.tabs([
-    t["tab_log"], t["tab_search"], t["tab_water"], t["tab_workouts"], t["tab_history"], t["tab_photos"], t["tab_camera"], t["tab_ai"], t["tab_settings"]
-])
+# --- החלפת st.tabs הבעייתי ב-st.radio מותאם אישית ויציב לחלוטין ---
+nav_options = [
+    t["tab_log"], t["tab_search"], t["tab_water"], t["tab_workouts"], 
+    t["tab_history"], t["tab_photos"], t["tab_camera"], t["tab_ai"], t["tab_settings"]
+]
+selected_tab = st.radio("בחר עמוד:", nav_options, horizontal=True, label_visibility="collapsed")
 
-with tab_auto_add:
+# ניתוב התוכן לפי הטאב הנבחר
+if selected_tab == t["tab_search"]:
     st.subheader("🔍 חיפוש והוספת מאכל או שתייה")
     
-    add_mode = st.radio("בחר אופן הוספה:", ["מאכל בודד / שתייה", "🍽️ הוספת ארוחה שלמה בבת אחת"])
+    add_mode = st.radio("בחר אופן הוספה:", ["מאכל בודד / שתייה", "🍽️ הוספת ארוחה שלמה בבת אחת"], key="add_mode_radio")
     
     food_options = ["-- בחר מאכל או משקה מהרשימה (הקלד לסינון) --"] + sorted(list(LOCAL_DATABASE.keys()))
     meal_type_sel = st.selectbox(t["meal_type"], [t["breakfast"], t["lunch"], t["dinner"], t["snack"]])
@@ -957,8 +939,7 @@ with tab_auto_add:
             else:
                 st.warning("נא לבחור לפחות פריט אחד להוספה.")
 
-# --- לשונית מעקב מים נפרדת ---
-with tab_water:
+elif selected_tab == t["tab_water"]:
     st.subheader("🚰 מעקב שתיית מים יומית")
     st.write(f"ניהול ומעקב שתייה עבור תאריך: **{selected_date}**")
     
@@ -1031,7 +1012,7 @@ with tab_water:
     else:
         st.info("עדיין לא תועדו מים היום. לחץ על אחד הכפתורים למעלה כדי להוסיף.")
 
-with tab_workouts:
+elif selected_tab == t["tab_workouts"]:
     st.subheader(t["workouts_header"])
     
     w_type = st.selectbox(t["workout_type"], ["פאדל (Padel)", "חדר כושר / משקולות", "ריצה / אירובי", "כדורגל / ספורט קבוצתי", "אופניים", "שחייה", "אחר"])
@@ -1109,8 +1090,7 @@ with tab_workouts:
     else:
         st.info("אין אימונים מתועדים לתאריך זה.")
 
-# --- לשונית תמונות מעקב אישי ---
-with tab_photos:
+elif selected_tab == t["tab_photos"]:
     st.subheader("📸 גלריית תמונות מעקב ושינוי פיזי לאורך זמן")
     st.write("צלם את עצמך קבוע, העלה את התמונה לכאן עם תאריך המדידה, ועקוב אחר השינוי המדהים שלך:")
 
@@ -1187,8 +1167,7 @@ with tab_photos:
     else:
         st.info("💡 עדיין לא העלת תמונות מעקב. זה הזמן לצלם את התמונה הראשונה!")
 
-# --- מסך היסטוריה ויומן ---
-with tab_history:
+elif selected_tab == t["tab_history"]:
     st.subheader("📅 יומן היסטוריה, בדיקת עמידה ביעדים ומעקב משקל")
     
     with st.expander("📈 גרף התקדמות ומעקב משקל אישי", expanded=True):
@@ -1288,7 +1267,7 @@ with tab_history:
         </div>
         """, unsafe_allow_html=True)
 
-with tab_camera:
+elif selected_tab == t["tab_camera"]:
     st.subheader("📸 סריקת תמונה (זיהוי מזון בעזרת AI)")
     ai_client = get_anthropic_client()
     if not ai_client:
@@ -1351,8 +1330,7 @@ with tab_camera:
                     except Exception as e:
                         st.error(f"שגיאה בזיהוי התמונה: {e}. ניתן להוסיף את הפריט ידנית בלשונית 'חיפוש והוספה'.")
 
-# --- מסך יומן אכילה ראשי ---
-with tab_log:
+elif selected_tab == t["tab_log"]:
     st.subheader(f"תיעוד ארוחות ושתייה לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
     entries = log_res.data
@@ -1490,7 +1468,7 @@ with tab_log:
     else:
         st.info("No logs for today.")
 
-with tab_ai:
+elif selected_tab == t["tab_ai"]:
     st.subheader("🤖 יועץ תזונה AI")
     ai_client = get_anthropic_client()
     if not ai_client:
@@ -1526,7 +1504,7 @@ with tab_ai:
                 except Exception as e:
                     st.error(f"שגיאה בפנייה ליועץ ה-AI: {e}")
 
-with tab_settings:
+elif selected_tab == t["tab_settings"]:
     st.subheader(t["settings_header"])
     with st.form("settings_form"):
         s_age = st.number_input(t["age"], min_value=12, max_value=120, value=int(profile_data.get("age", 30)))
