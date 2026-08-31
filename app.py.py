@@ -178,7 +178,7 @@ is_rtl = "Hebrew" in selected_lang or "עברית" in selected_lang
 dir_val = "rtl" if is_rtl else "ltr"
 text_align_val = "right" if is_rtl else "left"
 
-# --- Absolute Global Dropdown, Calendar, Date Input, File Uploader & Button Hover Fixes ---
+# --- Absolute Global Dropdown, Calendar, Date Input, File Uploader & Button Fixes ---
 st.markdown(
     f"""
     <style>
@@ -205,7 +205,7 @@ st.markdown(
         border-color: {widget_border} !important;
     }}
 
-    /* תיקון גורף לכל תיבות בחירת התאריך (Date Inputs) בכל הלשוניות (ראשי, היסטוריה, תמונות) */
+    /* תיקון גורף לכל תיבות בחירת התאריך (Date Inputs) בכל הלשוניות */
     div[data-baseweb="datepicker"], div[data-baseweb="input"], .stDateInput, 
     div[aria-label*="בחר תאריך"], div[aria-label*="Date"], div[aria-label*="תאריך"],
     input[type="date"], input[type="text"], input[type="number"], .stDateInput input, div[data-baseweb="datepicker"] input {{
@@ -214,12 +214,31 @@ st.markdown(
         -webkit-text-fill-color: {input_text_color} !important;
     }}
 
-    /* תיקון גורף לאזורי העלאת קבצים ותמונות (File Uploader) בכל הלשוניות */
+    /* תיקון יסודי ומוחלט לכפתור ואזור העלאת תבניות/תמונות (File Uploader) - מניעת הלבן והחלפת צבע בריחוף */
     div[data-testid="stFileUploader"], section[data-testid="stFileUploaderDropzone"],
-    div[data-testid="stFileUploader"] section, div[data-testid="stFileUploaderDropzone"] * {{
+    div[data-testid="stFileUploader"] *, section[data-testid="stFileUploaderDropzone"] * {{
         background-color: {input_bg_color} !important;
         color: {input_text_color} !important;
         border-color: {widget_border} !important;
+    }}
+    
+    /* מניעת שינוי צבע לבן או רקע בהיר בתוך אזור הגרירה וההעלאה של קבצים */
+    div[data-testid="stFileUploader"] div, section[data-testid="stFileUploaderDropzone"] div {{
+        background-color: {input_bg_color} !important;
+        color: {input_text_color} !important;
+    }}
+
+    /* כפתור "Browse files" בתוך אזור ההעלאה */
+    div[data-testid="stFileUploader"] button, section[data-testid="stFileUploaderDropzone"] button {{
+        background-color: rgba(0, 122, 255, 0.25) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(0, 122, 255, 0.5) !important;
+        border-radius: 10px !important;
+    }}
+    div[data-testid="stFileUploader"] button:hover, section[data-testid="stFileUploaderDropzone"] button:hover {{
+        background-color: rgba(0, 122, 255, 0.45) !important;
+        border-color: rgba(0, 122, 255, 0.9) !important;
+        color: #ffffff !important;
     }}
 
     /* תיקון גורף לכל פופאפ, לוח שנה, תפריט נפתח (Selectbox Dropdown) ושכבות תפריט */
@@ -301,15 +320,13 @@ st.markdown(
         color: {text_color} !important;
     }}
 
-    /* עיצוב אחיד ויציב לכפתורים - ללא שינוי צבע מפתיע בריחוף מעבר למה שמוגדר בצורה נקייה */
+    /* עיצוב אחיד ויציב לכפתורים - קבוע ויציב עם תגובה חלקה ואחידה */
     div.stButton > button, div[data-testid="stFormSubmitButton"] > button {{
         background-color: rgba(0, 122, 255, 0.2) !important;
         color: {text_color} !important;
         border: 1px solid rgba(0, 122, 255, 0.4) !important;
         border-radius: 12px !important;
         font-weight: 700 !important;
-        -webkit-transition: none !important;
-        transition: none !important;
     }}
     div.stButton > button:hover, div[data-testid="stFormSubmitButton"] > button:hover {{
         background-color: rgba(0, 122, 255, 0.35) !important;
@@ -1576,4 +1593,3 @@ elif selected_tab == t["tab_settings"]:
                     st.error(f"Error updating account: {e}")
             else:
                 st.info("No changes made.")
-                
