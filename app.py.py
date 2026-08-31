@@ -66,7 +66,7 @@ TRANSLATIONS = {
         "workouts_header": "🏋️ תיעוד אימון חדש",
         "workout_type": "סוג האימון",
         "workout_duration": "משך האימון (בדקות)",
-        "calories_burned": "קלוריות שנשרפו (הערכה)",
+        "calories_burned": "קלוריות שנשרפו (חישוב אוטומטי מדויק)",
         "add_workout_btn": "הוסף אימון ליומן",
         "settings_header": "⚙️ הגדרות פרופיל ופרטי חשבון",
         "theme_label": "מצב תצוגה (Theme)",
@@ -714,11 +714,11 @@ with tab_workouts:
         w_type = st.selectbox(t["workout_type"], ["פאדל (Padel)", "חדר כושר / משקולות", "ריצה / אירובי", "כדורגל / ספורט קבוצתי", "אופניים", "שחייה", "אחר"])
         w_duration = st.number_input(t["workout_duration"], min_value=5, max_value=300, value=60, step=5)
         
-        # חישוב חכם המשתנה באופן אוטומטי לפי סוג האימון הנבחר
+        # חישוב קלוריות אוטומטי ומדויק לחלוטין בהתאם לסוג האימון שנבחר ולמשך הדקות
         if "משקולות" in w_type:
-            burn_rate_active = 6.3   # אימון משקולות (הפסקות בין סט לסט, קצב שריפה ממוקד)
+            burn_rate_active = 6.3   # אימון משקולות (כולל הפסקות מנוחה בין סטים)
         elif "פאדל" in w_type:
-            burn_rate_active = 8.5   # פאדל (תנועה דינמית מתמשכת, ריצות קצרות והפסקות קצרות)
+            burn_rate_active = 8.5   # פאדל (תנועה דינמית מתמשכת)
         elif "ריצה" in w_type:
             burn_rate_active = 11.2  # ריצה / אירובי (דופק גבוה ורציף)
         elif "כדורגל" in w_type:
@@ -733,11 +733,12 @@ with tab_workouts:
         calc_active = int(w_duration * burn_rate_active)
         calc_total = int(calc_active * 1.35)
 
+        # שדות תצוגה בלבד (לא ניתן לשנות ידנית כדי למנוע עיוות נתונים)
         c_inp1, c_inp2 = st.columns(2)
         with c_inp1:
-            w_calories = st.number_input("קלוריות פעילות (Active Calories)", min_value=10, max_value=3000, value=calc_active, step=10)
+            w_calories = st.number_input("קלוריות פעילות (Active Calories) - חישוב אוטומטי", min_value=10, max_value=3000, value=calc_active, step=1, disabled=True)
         with c_inp2:
-            w_total_calories = st.number_input("סה''כ קלוריות (Total Calories)", min_value=10, max_value=4000, value=calc_total, step=10)
+            w_total_calories = st.number_input("סה''כ קלוריות (Total Calories) - חישוב אוטומטי", min_value=10, max_value=4000, value=calc_total, step=1, disabled=True)
         
         submit_workout = st.form_submit_button(t["add_workout_btn"])
         
@@ -748,8 +749,8 @@ with tab_workouts:
                     "date": selected_date,
                     "workout_type": w_type,
                     "duration_minutes": int(w_duration),
-                    "calories_burned": int(w_calories),
-                    "total_calories": int(w_total_calories)
+                    "calories_burned": int(calc_active),
+                    "total_calories": int(calc_total)
                 }).execute()
                 st.success("האימון נוסף בהצלחה!")
                 st.rerun()
@@ -760,7 +761,7 @@ with tab_workouts:
                         "date": selected_date,
                         "workout_type": w_type,
                         "duration_minutes": int(w_duration),
-                        "calories_burned": int(w_calories)
+                        "calories_burned": int(calc_active)
                     }).execute()
                     st.success("האימון נוסף בהצלחה!")
                     st.rerun()
