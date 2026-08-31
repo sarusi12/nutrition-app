@@ -196,61 +196,8 @@ st.markdown(
         color: {text_color} !important;
     }}
 
-    input, textarea, select, div[data-baseweb="select"] {{
-        color: {text_color} !important;
-        background-color: {widget_bg} !important;
+    input, textarea, select {{
         -webkit-text-fill-color: {text_color} !important;
-    }}
-
-    /* עטיפות שדות הקלט (text_input / number_input / date_input) מגיעות
-       עם רקע בהיר ברירת מחדל משלהן שלא כוסה קודם, מה שהשאיר "פס" בהיר
-       מאחורי הטקסט הכהה/לבן שכפינו -> טקסט בלתי קריא. */
-    div[data-baseweb="base-input"],
-    div[data-baseweb="input"],
-    [data-testid="stTextInput"] > div,
-    [data-testid="stNumberInput"] > div,
-    [data-testid="stDateInput"] > div,
-    [data-testid="stTextArea"] > div {{
-        background-color: {widget_bg} !important;
-        border-color: {widget_border} !important;
-    }}
-
-    /* selectbox (למשל "בחר שפה") ו-date_input בנויים ע"י Streamlit עם כמה
-       שכבות div מקוננות, וחלקן מקבלות רקע בהיר ישירות (לא רק דרך העטיפה
-       החיצונית) -> נשאר "קופסה לבנה" מלאה עם טקסט בלתי נראה. מכסים את כל
-       השכבות הפנימיות בכפייה, כולל צבע האייקונים (svg). */
-    [data-testid="stSelectbox"] div[data-baseweb="select"],
-    [data-testid="stSelectbox"] div[data-baseweb="select"] > div,
-    [data-testid="stSelectbox"] div[data-baseweb="select"] div,
-    [data-testid="stDateInput"] input,
-    [data-testid="stDateInput"] div[data-baseweb="input"],
-    [data-testid="stDateInput"] div[data-baseweb="input"] div {{
-        background-color: {widget_bg} !important;
-        color: {text_color} !important;
-        border-color: {widget_border} !important;
-    }}
-    [data-testid="stSelectbox"] svg,
-    [data-testid="stDateInput"] svg {{
-        fill: {text_color} !important;
-    }}
-
-    /* כפתורים רגילים (form_submit_button, logout, add וכו') מגיעים
-       כברירת מחדל עם רקע לבן של Streamlit; כפינו עליהם טקסט לבן שנעלם.
-       נותנים להם רקע וגבול שתואמים לתמה, עם טקסט קריא. הכפתורים המיוחדים
-       (מים/אימונים עם key*="w_btn_") ממשיכים לקבל את הסטייל שלהם למטה,
-       כי הסלקטור שלהם ספציפי יותר וגובר על הכלל הזה. */
-    .stButton > button,
-    .stFormSubmitButton > button,
-    [data-testid="stFormSubmitButton"] > button {{
-        background-color: {widget_bg} !important;
-        color: {text_color} !important;
-        border: 1px solid {widget_border} !important;
-    }}
-    .stButton > button:hover,
-    .stFormSubmitButton > button:hover,
-    [data-testid="stFormSubmitButton"] > button:hover {{
-        border-color: rgba(10, 132, 255, 0.6) !important;
-        color: {text_color} !important;
     }}
     
     section[data-testid="stSidebar"][aria-expanded="false"] {{
@@ -1642,4 +1589,3 @@ with tab_settings:
                     st.error(f"Error updating account: {e}")
             else:
                 st.info("No changes made.")
-
