@@ -46,6 +46,7 @@ TRANSLATIONS = {
         "tab_search": "🔍 חיפוש והוספה",
         "tab_workouts": "💪 אימונים ושריפת קלוריות",
         "tab_history": "📅 היסטוריה ויומן",
+        "tab_photos": "📸 תמונות מעקב",
         "tab_camera": "📸 סריקת תמונה",
         "tab_ai": "🤖 יועץ AI",
         "tab_settings": "⚙️ הגדרות פרופיל",
@@ -106,6 +107,7 @@ TRANSLATIONS = {
         "tab_search": "🔍 Search & Add",
         "tab_workouts": "💪 Workouts & Calories",
         "tab_history": "📅 History & Calendar",
+        "tab_photos": "📸 Progress Photos",
         "tab_camera": "📸 Image Scan",
         "tab_ai": "🤖 AI Advisor",
         "tab_settings": "⚙️ Profile Settings",
@@ -167,7 +169,7 @@ text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
 widget_border = "rgba(255, 255, 255, 0.1)" if is_dark else "rgba(0, 0, 0, 0.08)"
 
-# --- Clean CSS Styling (הסתרה מוחלטת של סרגל צד + הגדלת לשוניות הניווט) ---
+# --- Clean CSS Styling ---
 st.markdown(
     f"""
     <style>
@@ -196,7 +198,6 @@ st.markdown(
         direction: rtl !important;
     }}
 
-    /* הגדלה והבלטה משמעותית של לשוניות הניווט העליונות (הטאבים) */
     .stTabs [data-baseweb="tab-list"] {{
         direction: rtl;
         gap: 8px;
@@ -219,7 +220,6 @@ st.markdown(
         flex-shrink: 0;
     }}
 
-    /* ווידג'טים ראשיים מוגדלים ומרווחים */
     .ios-widget {{
         background: {widget_bg};
         backdrop-filter: blur(20px);
@@ -307,8 +307,24 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# --- מאגר מובנה ענק ועשיר (כולל מסעדות, ג'אנק פוד וצ'יטים) ---
+# --- מאגר מובנה ענק ועשיר (כולל משקאות, מים וקפה) ---
 LOCAL_DATABASE = {
+    # --- 💧 משקאות ומים ---
+    "מים (כוס / 250 מ\"ל)": {"cal": 0.0, "p": 0.0, "c": 0.0, "f": 0.0},
+    "בקבוק מים מינרליים (500 מ\"ל)": {"cal": 0.0, "p": 0.0, "c": 0.0, "f": 0.0},
+    "בקבוק מים גדול (1.5 ליטר)": {"cal": 0.0, "p": 0.0, "c": 0.0, "f": 0.0},
+    "קפה שחור / הפוך על חלב דל סוכר / 3%": {"cal": 35.0, "p": 2.0, "c": 4.0, "f": 1.5},
+    "קפה קרטון / קפוצ'ינו ביתפה": {"cal": 80.0, "p": 4.0, "c": 9.0, "f": 3.0},
+    "תה / חליטת צמחים (ללא סוכר)": {"cal": 2.0, "p": 0.0, "c": 0.5, "f": 0.0},
+    "תה עם כפית סוכר": {"cal": 20.0, "p": 0.0, "c": 5.0, "f": 0.0},
+    "קולה זירו / ספרייט זירו (פחית / 330 מ\"ל)": {"cal": 1.0, "p": 0.0, "c": 0.0, "f": 0.0},
+    "קולה רגילה / משקה ממותק (פחית / 330 מ\"ל)": {"cal": 140.0, "p": 0.0, "c": 35.0, "f": 0.0},
+    "מיץ תפוזים סחוט טבעי (כוס / 250 מ\"ל)": {"cal": 112.0, "p": 1.7, "c": 26.0, "f": 0.5},
+    "משקה אנרגיה (כגון בלו / רד בול - פחית)": {"cal": 115.0, "p": 0.0, "c": 28.0, "f": 0.0},
+    "משקה אנרגיה ללא סוכר (זירו)": {"cal": 10.0, "p": 0.0, "c": 2.0, "f": 0.0},
+    "בירה שליש / חצי ליטר (אלכוהול)": {"cal": 215.0, "p": 2.0, "c": 16.0, "f": 0.0},
+    "כוס יין אדום / לבן": {"cal": 125.0, "p": 0.1, "c": 4.0, "f": 0.0},
+
     # --- בסיסי וביצים ---
     "ביצה שלמה (גדולה / L)": {"cal": 75.0, "p": 6.3, "c": 0.4, "f": 5.3},
     "חביתה (משתי ביצים מטוגנת בשמן רגיל)": {"cal": 185.0, "p": 13.0, "c": 1.0, "f": 13.5},
@@ -463,11 +479,20 @@ LOCAL_DATABASE = {
     "כנפי עוף מטוגנות ברוטב ברביקיו / צ'ילי (6 יחידות)": {"cal": 480.0, "p": 26.0, "c": 15.0, "f": 35.0},
 }
 
-# --- פונקציות עזר גלובליות לחישוב יחידות חכמות ---
+# --- פונקציות עזר גלובליות ---
 def get_unit_options(item_name):
     if not item_name or item_name == "-- ללא --":
         return ["גרם", "יחידות", "כפות"], 0
         
+    if "מים" in item_name or "בקבוק מים" in item_name:
+        return ["כוסות (250 מ\"ל)", "מיליליטר (מל)"], 0
+    if "קפה" in item_name or "תה" in item_name or "מיץ" in item_name:
+        return ["כוסות", "מיליליטר (מל)"], 0
+    if "קולה" in item_name or "אנרגיה" in item_name:
+        return ["פחיות / בקבוקים", "מיליליטר (מל)"], 0
+    if "בירה" in item_name or "יין" in item_name:
+        return ["כוסות / בקבוקים", "מיליליטר (מל)"], 0
+
     if "פיצה" in item_name and "מגש" not in item_name:
         return ["יחידות (משולשים)", "גרם"], 0
     if "המבורגר" in item_name or "שווארמה" in item_name or "פלאפל" in item_name or "בורקס" in item_name or "חטיף שוקולד" in item_name or "גלידה" in item_name:
@@ -505,7 +530,10 @@ def get_unit_options(item_name):
 
 def calc_grams(item_name, unit, raw_amount):
     if not item_name or item_name == "-- ללא --": return raw_amount
-    if unit == "כפות": return raw_amount * 15.0
+    if unit in ["כוסות (250 מ\"ל)", "כוסות", "כוסות / בקבוקים"]: return raw_amount * 250.0
+    elif unit == "פחיות / בקבוקים": return raw_amount * 330.0
+    elif unit == "מיליליטר (מל)": return raw_amount
+    elif unit == "כפות": return raw_amount * 15.0
     elif unit == "כפיות": return raw_amount * 5.0
     elif unit == "קערה / מנה" or unit == "מנה": return raw_amount * 200.0
     elif unit == "בקבוק": return raw_amount * 250.0 
@@ -686,22 +714,22 @@ selected_date = st.sidebar.date_input("בחר תאריך", date.today()).strftim
 goals_res = supabase.table("daily_goals").select("*").eq("user_id", user_id).eq("date", selected_date).execute()
 user_goals = goals_res.data[0] if goals_res.data else {"target_calories": 2200, "target_protein": 170, "target_carbs": 220, "target_fat": 60}
 
-# יצירת הלשוניות
-tab_log, tab_auto_add, tab_workouts, tab_history, tab_camera, tab_ai, tab_settings = st.tabs([t["tab_log"], t["tab_search"], t["tab_workouts"], t["tab_history"], t["tab_camera"], t["tab_ai"], t["tab_settings"]])
+# יצירת הלשוניות (כולל לשונית תמונות מעקב חדשה)
+tab_log, tab_auto_add, tab_workouts, tab_history, tab_photos, tab_camera, tab_ai, tab_settings = st.tabs([t["tab_log"], t["tab_search"], t["tab_workouts"], t["tab_history"], t["tab_photos"], t["tab_camera"], t["tab_ai"], t["tab_settings"]])
 
 with tab_auto_add:
-    st.subheader("🔍 חיפוש והוספת מאכל")
+    st.subheader("🔍 חיפוש והוספת מאכל או שתייה")
     
-    add_mode = st.radio("בחר אופן הוספה:", ["מאכל בודד", "🍽️ הוספת ארוחה שלמה בבת אחת"])
+    add_mode = st.radio("בחר אופן הוספה:", ["מאכל בודד / שתייה", "🍽️ הוספת ארוחה שלמה בבת אחת"])
     
-    food_options = ["-- בחר מאכל מהרשימה (הקלד לסינון) --"] + sorted(list(LOCAL_DATABASE.keys()))
+    food_options = ["-- בחר מאכל או משקה מהרשימה (הקלד לסינון) --"] + sorted(list(LOCAL_DATABASE.keys()))
     meal_type_sel = st.selectbox(t["meal_type"], [t["breakfast"], t["lunch"], t["dinner"], t["snack"]])
 
-    if add_mode == "מאכל בודד":
+    if add_mode == "מאכל בודד / שתייה":
         selected_from_db = st.selectbox(t["search_food"], options=food_options, key="food_selectbox_autocomplete")
-        custom_search = st.text_input("או הקלד כל מוצר אחר שתרצה מהסופר או ממסעדה:", key="custom_food_input")
+        custom_search = st.text_input("או הקלד כל מוצר או משקה אחר מהסופר או ממסעדה:", key="custom_food_input")
         
-        active_search_name = custom_search.strip() if custom_search.strip() else (selected_from_db if selected_from_db != "-- בחר מאכל מהרשימה (הקלד לסינון) --" else "")
+        active_search_name = custom_search.strip() if custom_search.strip() else (selected_from_db if selected_from_db != "-- בחר מאכל או משקה מהרשימה (הקלד לסינון) --" else "")
         
         u_opts, def_idx = get_unit_options(active_search_name)
 
@@ -709,8 +737,8 @@ with tab_auto_add:
         with col_u1:
             chosen_unit = st.selectbox(t["unit_type"], u_opts, index=def_idx, key="food_unit_selection")
         with col_u2:
-            default_val = 1.0 if chosen_unit in ["בקבוק", "סקופ", "יחידות", "כפות", "קערה / מנה", "כפיות", "אריזה / יחידה", "יחידות (משולשים)", "רולים / יחידות", "מנה"] else 100.0
-            raw_amount = st.number_input(t["amount_val"], min_value=0.1, value=default_val, step=1.0 if chosen_unit != "גרם" else 10.0, key=f"food_amount_input_{chosen_unit}")
+            default_val = 1.0 if chosen_unit in ["בקבוק", "סקופ", "יחידות", "כפות", "קערה / מנה", "כפיות", "אריזה / יחידה", "יחידות (משולשים)", "רולים / יחידות", "מנה", "כוסות (250 מ\"ל)", "כוסות", "פחיות / בקבוקים", "כוסות / בקבוקים"] else 250.0 if "מים" in active_search_name else 100.0
+            raw_amount = st.number_input(t["amount_val"], min_value=0.1, value=default_val, step=1.0 if chosen_unit not in ["גרם", "מיליליטר (מל)"] else 50.0, key=f"food_amount_input_{chosen_unit}")
 
         amount_input = calc_grams(active_search_name, chosen_unit, raw_amount)
 
@@ -724,11 +752,11 @@ with tab_auto_add:
                     food_id = existing.data[0]["id"] if existing.data else supabase.table("food_items").insert({"user_id": user_id, "name": item_name, "calories_per_100g": data["cal"], "protein_per_100g": data["p"], "carbs_per_100g": data["c"], "fat_per_100g": data["f"]}).execute().data[0]["id"]
 
                     supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": food_id, "amount_grams": amount_input, "meal_type": meal_type_sel}).execute()
-                    st.success(f"✅ הצלחה! המאכל '{item_name}' ({raw_amount} {chosen_unit}) התווסף בהצלחה לארוחת {meal_type_sel}.")
+                    st.success(f"✅ הצלחה! הפריט '{item_name}' ({raw_amount} {chosen_unit}) התווסף בהצלחה!")
                 else:
-                    st.error("לא נמצאו נתונים תזונתיים עבור מאכל זה במאגר.")
+                    st.error("לא נמצאו נתונים תזונתיים עבור פריט זה במאגר.")
             else:
-                st.warning("נא לבחור מאכל מהרשימה או להקליד חיפוש חופשי.")
+                st.warning("נא לבחור פריט מהרשימה או להקליד חיפוש חופשי.")
 
     else:
         st.info("בחר עד 4 מרכיבים שונים כדי להרכיב ארוחה שלמה ולהוסיף הכל בלחיצה אחת:")
@@ -739,9 +767,9 @@ with tab_auto_add:
             c1, c2 = st.columns(2)
             unit_sel = c1.selectbox(f"סוג ({idx})", u_opts, index=def_idx, key=f"meal_unit_{idx}", label_visibility="collapsed")
             
-            d_val = 1.0 if unit_sel in ["בקבוק", "סקופ", "יחידות", "כפות", "קערה / מנה", "כפיות", "אריזה / יחידה", "יחידות (משולשים)", "רולים / יחידות", "מנה"] else 100.0
+            d_val = 1.0 if unit_sel in ["בקבוק", "סקופ", "יחידות", "כפות", "קערה / מנה", "כפיות", "אריזה / יחידה", "יחידות (משולשים)", "רולים / יחידות", "מנה", "כוסות (250 מ\"ל)", "כוסות", "פחיות / בקבוקים", "כוסות / בקבוקים"] else 100.0
             
-            amt_val = c2.number_input(f"כמות ({idx})", min_value=0.1, value=d_val, step=1.0 if unit_sel != "גרם" else 10.0, key=f"meal_amt_{idx}_{unit_sel}", label_visibility="collapsed")
+            amt_val = c2.number_input(f"כמות ({idx})", min_value=0.1, value=d_val, step=1.0 if unit_sel not in ["גרם", "מיליליטר (מל)"] else 50.0, key=f"meal_amt_{idx}_{unit_sel}", label_visibility="collapsed")
             return item_sel, unit_sel, amt_val
             
         col_m1, col_m2 = st.columns(2)
@@ -781,7 +809,7 @@ with tab_auto_add:
                         st.session_state[k] = "-- ללא --"
                 st.rerun()
             else:
-                st.warning("נא לבחור לפחות מאכל אחד להוספה.")
+                st.warning("נא לבחור לפחות פריט אחד להוספה.")
 
 with tab_workouts:
     st.subheader(t["workouts_header"])
@@ -872,7 +900,75 @@ with tab_workouts:
     else:
         st.info("אין אימונים מתועדים לתאריך זה.")
 
-# --- מסך היסטוריה ויומן חדש (כולל גרף מעקב משקל מבוסס פרופיל/טבלה) ---
+# --- לשונית תמונות מעקב אישי (רעיון של אשתך!) ---
+with tab_photos:
+    st.subheader("📸 גלריית תמונות מעקב ושינוי פיזי לאורך זמן")
+    st.write("צצלם את עצמך קבוע, העלה את התמונה לכאן עם תאריך המדידה, ועקוב אחר השינוי המדהים שלך:")
+
+    with st.form("upload_progress_photo_form", clear_on_submit=True):
+        photo_file = st.file_uploader("בחר תמונת מעקב (JPG / PNG):", type=["jpg", "jpeg", "png"])
+        photo_date = st.date_input("תאריך הצילום:", date.today())
+        photo_note = st.text_input("הערה קצרה (למשל: אחרי תקופת חיטוב, משקל 88 ק\"ג):")
+        
+        submit_photo = st.form_submit_button("💾 שמור תמונה בגלריה")
+        
+        if submit_photo:
+            if photo_file is not None:
+                import base64
+                bytes_data = photo_file.getvalue()
+                base64_str = base64.b64encode(bytes_data).decode("utf-8")
+                img_data_url = f"data:image/jpeg;base64,{base64_str}"
+                
+                p_date_str = photo_date.strftime("%Y-%m-%d")
+                try:
+                    supabase.table("progress_photos").insert({
+                        "user_id": user_id,
+                        "date": p_date_str,
+                        "image_url": img_data_url,
+                        "note": photo_note
+                    }).execute()
+                    st.success("✅ התמונה נשמרה בהצלחה בגלריה האישית!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"שגיאה בשמירת התמונה (ודא שקיימת טבלת progress_photos או שמור כטקסט): {e}")
+            else:
+                    st.warning("נא לבחור תמונה להעלאה.")
+
+    st.divider()
+    st.subheader("🖼️ האלבום שלך")
+    
+    try:
+        photos_res = supabase.table("progress_photos").select("*").eq("user_id", user_id).order("date", desc=True).execute()
+        user_photos = photos_res.data
+    except Exception:
+        user_photos = []
+
+    if user_photos:
+        cols = st.columns(2)
+        for idx, p in enumerate(user_photos):
+            col_target = cols[idx % 2]
+            with col_target:
+                st.markdown(f"""
+                <div class="ios-widget" style="padding: 12px; min-height: unset;">
+                    <p style="font-weight: bold; margin-bottom: 6px;">📅 תאריך: {p.get('date', 'לא ידוע')}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                if p.get("image_url"):
+                    st.image(p["image_url"], use_container_width=True)
+                if p.get("note"):
+                    st.caption(f"הערה: {p['note']}")
+                
+                if st.button("🗑️ מחק תמונה", key=f"del_photo_{p.get('id', idx)}"):
+                    try:
+                        supabase.table("progress_photos").delete().eq("id", p["id"]).execute()
+                        st.rerun()
+                    except Exception:
+                        pass
+                st.divider()
+    else:
+        st.info("💡 עדיין לא העלת תמונות מעקב. זה הזמן לצלם את התמונה הראשונה!")
+
+# --- מסך היסטוריה ויומן (כולל גרף משקל) ---
 with tab_history:
     st.subheader("📅 יומן היסטוריה, בדיקת עמידה ביעדים ומעקב משקל")
     
@@ -887,7 +983,6 @@ with tab_history:
             
             if st.button("💾 שמור מדידת משקל"):
                 w_date_str = weight_date_input.strftime("%Y-%m-%d")
-                # שומר גם בטבלת מעקב (אם קיימת) וגם מעדכן את הפרופיל כגיבוי בטוח
                 try:
                     supabase.table("weight_logs").upsert({"user_id": user_id, "date": w_date_str, "weight": float(new_weight_input)}).execute()
                 except Exception:
@@ -897,7 +992,6 @@ with tab_history:
                 st.success(f"✅ המשקל {new_weight_input} ק\"ג נשמר בהצלחה!")
                 st.rerun()
 
-        # נסיון שליפה מטבלת מעקב המשקל, ואם ריק - ניצור נקודה מתוך הפרופיל
         weight_data = []
         try:
             w_res = supabase.table("weight_logs").select("*").eq("user_id", user_id).order("date", desc=False).execute()
@@ -906,7 +1000,6 @@ with tab_history:
             pass
 
         if not weight_data or len(weight_data) == 0:
-            # נתון ברירת מחדל מהפרופיל הנוכחי כדי שהגרף מיד יוצג
             weight_data = [{"date": str(date.today()), "weight": float(profile_data.get("weight", 75.0))}]
 
         import pandas as pd
@@ -976,37 +1069,6 @@ with tab_history:
         </div>
         """, unsafe_allow_html=True)
 
-    st.divider()
-
-    st.subheader("🏋️ סטטוס אימונים בתאריך זה:")
-    if hist_workouts:
-        st.success(f"✅ התאמנת ב-{history_date_str}! בוצעו {len(hist_workouts)} אימונים.")
-        
-        w_cols = st.columns(len(hist_workouts))
-        for idx, hw in enumerate(hist_workouts):
-            tot_val = hw.get('total_calories', hw['calories_burned'] + int(hw['duration_minutes'] * 2.2))
-            with w_cols[idx]:
-                st.markdown(f"""
-                <div class="ios-widget">
-                    <h4>🏋️ {hw['workout_type']}</h4>
-                    <h2>{hw['calories_burned']} פעילות</h2>
-                    <p>טוטאל: {tot_val} | {hw['duration_minutes']} דק'</p>
-                </div>
-                """, unsafe_allow_html=True)
-    else:
-        st.warning(f"⚠️ לא דווחו אימונים בתאריך {history_date_str}.")
-
-    st.divider()
-
-    st.subheader("🎯 סטטוס עמידה ביעדי תזונה:")
-    cal_diff = h_cal - h_goals['target_calories']
-    if abs(cal_diff) <= 150:
-        st.info(f"🎯 הצלחה מעולה! היית קרוב מאוד ליעד הקלורי (הפרש של {round(cal_diff)} קלוריות).")
-    elif cal_diff > 150:
-        st.warning(f"⚠️ חריגה מהיעד הקלורי בכ-{round(cal_diff)} קלוריות.")
-    else:
-        st.info(f"💡 היית מתחת ליעד הקלורי בכ-{round(abs(cal_diff))} קלוריות.")
-
 with tab_camera:
     st.subheader("📸 סריקת תמונה")
     uploaded_file = st.file_uploader("בחר תמונה", type=["jpg", "jpeg", "png"])
@@ -1022,9 +1084,9 @@ with tab_camera:
             st.success("הארוחה נוספה!")
             st.rerun()
 
-# --- מסך יומן אכילה ראשי ---
+# --- מסך יומן אכילה ראשי (כולל מעקב מים יומי חכם) ---
 with tab_log:
-    st.subheader(f"תיעוד ארוחות לתאריך: {selected_date}")
+    st.subheader(f"תיעוד ארוחות ושתייה לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
     entries = log_res.data
     
@@ -1033,8 +1095,45 @@ with tab_log:
     consumed_c = sum(e["food_items"]["carbs_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
     consumed_f = sum(e["food_items"]["fat_per_100g"] * e["amount_grams"] / 100.0 for e in entries)
 
+    # חישוב כמות המים שנצרכה היום (במיליליטר) מתוך הלוגים
+    total_water_ml = sum(e["amount_grams"] for e in entries if any(w in e["food_items"]["name"] for w in ["מים", "בקבוק מים"]))
+    water_glasses = round(total_water_ml / 250.0, 1)
+
     workouts_res_summary = supabase.table("workouts").select("*").eq("user_id", user_id).eq("date", selected_date).execute()
     total_burned_cals = sum(w.get("calories_burned", 0) for w in workouts_res_summary.data) if workouts_res_summary.data else 0
+
+    st.divider()
+    
+    # --- ווידג'ט מעקב מים יומי מרהיב ---
+    st.markdown(f"""
+    <div class="ios-widget" style="background: linear-gradient(135deg, rgba(0, 122, 255, 0.1), rgba(88, 86, 214, 0.1)); border: 1px solid rgba(0, 122, 255, 0.3);">
+        <h4 style="color: #007AFF;">💧 מעקב שתייה ומים יומי</h4>
+        <h2>{int(total_water_ml)} מ''ל ({water_glasses} כוסות)</h2>
+        <p>יעד מומלץ יומי: 3,000 מ''ל (12 כוסות)</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col_w_btn1, col_w_btn2, col_w_btn3 = st.columns(3)
+    if col_w_btn1.button("➕ כוס מים (250 מ\"ל)"):
+        w_item_name = "מים (כוס / 250 מ\"ל)"
+        existing_w = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", w_item_name).execute()
+        w_food_id = existing_w.data[0]["id"] if existing_w.data else supabase.table("food_items").insert({"user_id": user_id, "name": w_item_name, "calories_per_100g": 0.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 0.0}).execute().data[0]["id"]
+        supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": w_food_id, "amount_grams": 250.0, "meal_type": t["breakfast"]}).execute()
+        st.rerun()
+
+    if col_w_btn2.button("➕ בקבוק מים (500 מ\"ל)"):
+        w_item_name = "בקבוק מים מינרליים (500 מ\"ל)"
+        existing_w = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", w_item_name).execute()
+        w_food_id = existing_w.data[0]["id"] if existing_w.data else supabase.table("food_items").insert({"user_id": user_id, "name": w_item_name, "calories_per_100g": 0.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 0.0}).execute().data[0]["id"]
+        supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": w_food_id, "amount_grams": 500.0, "meal_type": t["lunch"]}).execute()
+        st.rerun()
+
+    if col_w_btn3.button("➕ בקבוק ענק (1.5 ליטר)"):
+        w_item_name = "בקבוק מים גדול (1.5 ליטר)"
+        existing_w = supabase.table("food_items").select("*").eq("user_id", user_id).eq("name", w_item_name).execute()
+        w_food_id = existing_w.data[0]["id"] if existing_w.data else supabase.table("food_items").insert({"user_id": user_id, "name": w_item_name, "calories_per_100g": 0.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 0.0}).execute().data[0]["id"]
+        supabase.table("food_log").insert({"user_id": user_id, "date": selected_date, "food_id": w_food_id, "amount_grams": 1500.0, "meal_type": t["dinner"]}).execute()
+        st.rerun()
 
     st.divider()
     st.subheader(t["daily_summary"])
@@ -1073,20 +1172,6 @@ with tab_log:
         </div>
         """, unsafe_allow_html=True)
 
-    if workouts_res_summary.data:
-        st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
-        w_log_cols = st.columns(len(workouts_res_summary.data))
-        for idx, w_item in enumerate(workouts_res_summary.data):
-            tot_val = w_item.get('total_calories', w_item['calories_burned'] + int(w_item['duration_minutes'] * 2.2))
-            with w_log_cols[idx]:
-                st.markdown(f"""
-                <div class="ios-widget">
-                    <h4>🏋️ {w_item['workout_type']}</h4>
-                    <h2>{w_item['calories_burned']} פעילות</h2>
-                    <p>טוטאל: {tot_val} | {w_item['duration_minutes']} דק'</p>
-                </div>
-                """, unsafe_allow_html=True)
-
     st.divider()
     
     if entries:
@@ -1115,38 +1200,6 @@ with tab_log:
 
             with st.expander(expander_title):
                 if meal_items:
-                    mc1, mc2, mc3, mc4 = st.columns(4)
-                    with mc1:
-                        st.markdown(f"""
-                        <div class="meal-summary-widget">
-                            <span style="font-size: 0.9em; opacity: 0.85;">🔥 קלוריות</span>
-                            <div style="font-size: 1.35em; font-weight: bold;">{round(meal_cals, 1)}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    with mc2:
-                        st.markdown(f"""
-                        <div class="meal-summary-widget">
-                            <span style="font-size: 0.9em; opacity: 0.85;">🥩 חלבון</span>
-                            <div style="font-size: 1.35em; font-weight: bold;">{round(meal_p, 1)}g</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    with mc3:
-                        st.markdown(f"""
-                        <div class="meal-summary-widget">
-                            <span style="font-size: 0.9em; opacity: 0.85;">🍞 פחמימות</span>
-                            <div style="font-size: 1.35em; font-weight: bold;">{round(meal_c, 1)}g</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    with mc4:
-                        st.markdown(f"""
-                        <div class="meal-summary-widget">
-                            <span style="font-size: 0.9em; opacity: 0.85;">🥑 שומן</span>
-                            <div style="font-size: 1.35em; font-weight: bold;">{round(meal_f, 1)}g</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-
-                    st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
-
                     for e in meal_items:
                         food_item = e["food_items"]
                         amt = e["amount_grams"]
@@ -1156,7 +1209,9 @@ with tab_log:
                         item_c = food_item['carbs_per_100g'] * amt / 100.0
                         item_f = food_item['fat_per_100g'] * amt / 100.0
 
-                        if amt == 250.0 and ("משקה חלבון" in food_item['name'] or "תנובה" in food_item['name'] or "יטבתה" in food_item['name'] or "שטראוס" in food_item['name']):
+                        if "מים" in food_item['name'] or "בקבוק מים" in food_item['name']:
+                            display_amt = f"{int(amt)} מ\"ל"
+                        elif amt == 250.0 and ("משקה חלבון" in food_item['name'] or "תנובה" in food_item['name'] or "יטבתה" in food_item['name'] or "שטראוס" in food_item['name']):
                             display_amt = "1 בקבוק (250 מ\"ל)"
                         elif amt == 112.0 and "טונה" in food_item['name']:
                             display_amt = "1 קופסת טונה"
@@ -1164,7 +1219,6 @@ with tab_log:
                             if amt == 120.0: display_amt = "1 חביתה (2 ביצים)"
                             elif amt == 180.0: display_amt = "1 חביתה (3 ביצים)"
                             elif amt == 130.0: display_amt = "1 חביתת ירק"
-                            elif amt % 120.0 == 0: display_amt = f"{int(amt / 120.0)} חביתיות"
                             else: display_amt = f"{amt} גרם"
                         elif "ביצה" in food_item['name'] or "ביצת עין" in food_item['name']:
                             if amt == 50.0: display_amt = "1 ביצה"
@@ -1184,10 +1238,6 @@ with tab_log:
                             if amt == 35.0: display_amt = "1 פרוסה"
                             elif amt % 35.0 == 0: display_amt = f"{int(amt / 35.0)} פרוסות"
                             else: display_amt = f"{amt} גרם"
-                        elif any(k in food_item['name'] for k in ["חזה עוף", "שניצל", "סלמון", "סטייק", "פרגיות"]) and amt % 150.0 == 0:
-                            display_amt = f"{int(amt / 150.0)} יחידות"
-                        elif amt % 15.0 == 0 and amt <= 150.0:
-                            display_amt = f"{int(amt / 15.0)} כפות"
                         else:
                             display_amt = f"{amt} גרם"
 
@@ -1208,24 +1258,6 @@ with tab_log:
                             if edit_key_state in st.session_state:
                                 del st.session_state[edit_key_state]
                             st.rerun()
-
-                        if st.session_state[edit_key_state]:
-                            with st.form(key=f"form_edit_{e['id']}"):
-                                new_amt = st.number_input("עדכן כמות חדשה (בגרמים):", min_value=1.0, value=float(e['amount_grams']), step=10.0)
-                                
-                                available_meals = [t["breakfast"], t["lunch"], t["dinner"], t["snack"]]
-                                current_meal_idx = available_meals.index(e.get("meal_type", t["breakfast"])) if e.get("meal_type") in available_meals else 0
-                                new_meal_type = st.selectbox("שייך לארוחה:", available_meals, index=current_meal_idx)
-
-                                submitted_edit = st.form_submit_button("שמור שינוי")
-                                if submitted_edit:
-                                    supabase.table("food_log").update({
-                                        "amount_grams": new_amt,
-                                        "meal_type": new_meal_type
-                                    }).eq("id", e['id']).execute()
-                                    st.session_state[edit_key_state] = False
-                                    st.success("הפרטים עודכנו בהצלחה!")
-                                    st.rerun()
                         st.divider()
                 else:
                     st.info("אין מאכלים בארוחה זו.")
@@ -1259,7 +1291,7 @@ with tab_settings:
 
     st.divider()
     st.markdown(t["account_update"])
-    with st.form("account_update_form"):
+    with st.form("account_update_file_form"):
         new_email = st.text_input(t["new_email"], value=st.session_state["user"].email)
         new_password = st.text_input(t["new_password"], type="password")
         submit_account = st.form_submit_button(t["update_account"])
