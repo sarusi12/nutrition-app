@@ -159,7 +159,7 @@ text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
 widget_border = "rgba(255, 255, 255, 0.1)" if is_dark else "rgba(0, 0, 0, 0.08)"
 
-# --- Clean CSS Styling (RTL & Beautiful Expander Support) ---
+# --- Clean CSS Styling ---
 st.markdown(
     f"""
     <style>
@@ -195,7 +195,6 @@ st.markdown(
         margin-bottom: 10px;
     }}
     
-    /* יישור לשוניות ומודולים לימין */
     .stTabs [data-baseweb="tab-list"] {{
         direction: rtl;
         gap: 8px;
@@ -207,15 +206,6 @@ st.markdown(
         border-radius: 12px;
         padding: 10px 16px;
         color: {text_color};
-    }}
-
-    /* עיצוב רצועות ארוחות (Expander) לימין בצורה נקייה וידידותית */
-    .streamlit-expanderHeader {{
-        background-color: {widget_bg} !important;
-        border: 1px solid {widget_border} !important;
-        border-radius: 14px !important;
-        direction: rtl !important;
-        text-align: right !important;
     }}
     </style>
     """,
@@ -231,8 +221,9 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# --- מאגר מובנה ענק ומקיף ---
+# --- מאגר מובנה מעודכן ועשיר ---
 LOCAL_DATABASE = {
+    "טוסט (עם גבינה צהובה וגבינה לבנה / קוטג')": {"cal": 280.0, "p": 16.0, "c": 30.0, "f": 10.0},
     "סלט ירקות קצוץ (עם כפית שמן זית)": {"cal": 55.0, "p": 1.2, "c": 4.5, "f": 4.0},
     "סלט ירקות קצוץ (ללא שמן)": {"cal": 20.0, "p": 1.0, "c": 4.2, "f": 0.3},
     "סלט יווני (עם בולגרית וזיתים)": {"cal": 110.0, "p": 4.5, "c": 5.0, "f": 8.5},
@@ -294,6 +285,7 @@ LOCAL_DATABASE = {
     "לחם אחיד": {"cal": 245.0, "p": 9.0, "c": 48.0, "f": 2.0},
     "לחם קל": {"cal": 190.0, "p": 10.0, "c": 35.0, "f": 1.5},
     "לחם מלא / פשתן": {"cal": 250.0, "p": 12.0, "c": 41.0, "f": 3.5},
+    "פרוסת לחם אחיד / מלא": {"cal": 75.0, "p": 3.0, "c": 14.0, "f": 1.0},
     "פיתה": {"cal": 275.0, "p": 8.5, "c": 55.0, "f": 1.2},
     "אורז בסמטי מבושל": {"cal": 130.0, "p": 2.8, "c": 28.0, "f": 0.2},
     "קוסקוס מבושל": {"cal": 112.0, "p": 3.8, "c": 23.2, "f": 0.2},
@@ -502,8 +494,8 @@ with tab_auto_add:
             unit_options = ["כפות", "גרם", "כפיות"]
         elif any(k in active_search_name for k in ["טונה", "קוטג'", "גבינה", "יוגורט", "חלב", "אבקת חלבון"]):
             unit_options = ["גרם", "בקבוק / יחידה", "כפות", "סקופ"]
-        elif any(k in active_search_name for k in ["עגבנייה", "מלפפון", "בננה", "תפוח", "תפוז", "אגס", "ביצה", "פיתה", "לחם"]):
-            unit_options = ["יחידות", "גרם"]
+        elif any(k in active_search_name for k in ["עגבנייה", "מלפפון", "בננה", "תפוח", "תפוז", "אגס", "ביצה", "פיתה", "לחם", "פרוסת", "טוסט"]):
+            unit_options = ["יחידות", "גרם", "כפות"]
         else:
             unit_options = ["גרם", "כפות", "יחידות"]
 
@@ -511,6 +503,7 @@ with tab_auto_add:
         with col_u1:
             chosen_unit = st.selectbox(t["unit_type"], unit_options, key="food_unit_selection")
         with col_u2:
+            # דיפולט 1 עבור יחידות, סקופים, פרוסות וכו'
             default_val = 1.0 if chosen_unit in ["בקבוק / יחידה", "סקופ", "יחידות", "כפות", "קערה / מנה"] else 100.0
             raw_amount = st.number_input(t["amount_val"], min_value=0.1, value=default_val, step=1.0 if chosen_unit != "גרם" else 10.0)
 
@@ -534,6 +527,8 @@ with tab_auto_add:
         elif chosen_unit == "יחידות":
             if "ביצה" in active_search_name:
                 amount_input = raw_amount * 50.0
+            elif "פרוסת לחם" in active_search_name or "טוסט" in active_search_name:
+                amount_input = raw_amount * 35.0  # משקל ממוצע לפרוסת לחם / טוסט
             elif any(k in active_search_name for k in ["בננה", "תפוח", "תפוז", "אגס"]):
                 amount_input = raw_amount * 120.0
             elif "עגבנייה" in active_search_name or "מלפפון" in active_search_name:
@@ -670,7 +665,7 @@ with tab_camera:
             st.success("הארוחה נוספה!")
             st.rerun()
 
-# --- מסך יומן אכילה ראשי עם תצוגת ארוחות מתוקנת מימין לשמאל ---
+# --- מסך יומן אכילה ראשי ---
 with tab_log:
     st.subheader(f"תיעוד ארוחות לתאריך: {selected_date}")
     log_res = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute()
@@ -745,12 +740,10 @@ with tab_log:
             meal_c = sum(item["food_items"]["carbs_per_100g"] * item["amount_grams"] / 100.0 for item in meal_items)
             meal_f = sum(item["food_items"]["fat_per_100g"] * item["amount_grams"] / 100.0 for item in meal_items)
 
-            # כותרת נכונה לימין: שם הארוחה בצד ימין, והנתונים בצד שמאל של השורה
             expander_title = f"🍽️ **{meal_name}** &nbsp;&nbsp;|&nbsp;&nbsp; 🔥 {round(meal_cals, 1)} קל' | 🥩 {round(meal_p, 1)}g חלבון | 🍞 {round(meal_c, 1)}g פח' | 🥑 {round(meal_f, 1)}g שומן"
 
             with st.expander(expander_title):
                 if meal_items:
-                    # סיכום ארוחה בריבועים מעוצבים לימין
                     mc1, mc2, mc3, mc4 = st.columns(4)
                     with mc1:
                         st.markdown(f"""
@@ -796,10 +789,14 @@ with tab_log:
                             display_amt = "1 בקבוק (250 מ\"ל)"
                         elif amt == 112.0 and "טונה" in food_item['name']:
                             display_amt = "1 קופסת טונה"
-                        elif amt % 15.0 == 0 and amt <= 150.0:
-                            display_amt = f"{int(amt / 15.0)} כפות"
                         elif amt == 50.0 and "ביצה" in food_item['name']:
                             display_amt = "1 ביצה"
+                        elif amt == 35.0 and ("טוסט" in food_item['name'] or "פרוסת לחם" in food_item['name']):
+                            display_amt = "1 פרוסה / יחידה"
+                        elif amt % 35.0 == 0 and ("טוסט" in food_item['name'] or "פרוסת לחם" in food_item['name']):
+                            display_amt = f"{int(amt / 35.0)} פרוסות"
+                        elif amt % 15.0 == 0 and amt <= 150.0:
+                            display_amt = f"{int(amt / 15.0)} כפות"
                         else:
                             display_amt = f"{amt} גרם"
 
