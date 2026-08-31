@@ -201,6 +201,38 @@ st.markdown(
         background-color: {widget_bg} !important;
         -webkit-text-fill-color: {text_color} !important;
     }}
+
+    /* עטיפות שדות הקלט (text_input / number_input / date_input) מגיעות
+       עם רקע בהיר ברירת מחדל משלהן שלא כוסה קודם, מה שהשאיר "פס" בהיר
+       מאחורי הטקסט הכהה/לבן שכפינו -> טקסט בלתי קריא. */
+    div[data-baseweb="base-input"],
+    div[data-baseweb="input"],
+    [data-testid="stTextInput"] > div,
+    [data-testid="stNumberInput"] > div,
+    [data-testid="stDateInput"] > div,
+    [data-testid="stTextArea"] > div {{
+        background-color: {widget_bg} !important;
+        border-color: {widget_border} !important;
+    }}
+
+    /* כפתורים רגילים (form_submit_button, logout, add וכו') מגיעים
+       כברירת מחדל עם רקע לבן של Streamlit; כפינו עליהם טקסט לבן שנעלם.
+       נותנים להם רקע וגבול שתואמים לתמה, עם טקסט קריא. הכפתורים המיוחדים
+       (מים/אימונים עם key*="w_btn_") ממשיכים לקבל את הסטייל שלהם למטה,
+       כי הסלקטור שלהם ספציפי יותר וגובר על הכלל הזה. */
+    .stButton > button,
+    .stFormSubmitButton > button,
+    [data-testid="stFormSubmitButton"] > button {{
+        background-color: {widget_bg} !important;
+        color: {text_color} !important;
+        border: 1px solid {widget_border} !important;
+    }}
+    .stButton > button:hover,
+    .stFormSubmitButton > button:hover,
+    [data-testid="stFormSubmitButton"] > button:hover {{
+        border-color: rgba(10, 132, 255, 0.6) !important;
+        color: {text_color} !important;
+    }}
     
     section[data-testid="stSidebar"][aria-expanded="false"] {{
         display: none !important;
@@ -1591,3 +1623,4 @@ with tab_settings:
                     st.error(f"Error updating account: {e}")
             else:
                 st.info("No changes made.")
+
