@@ -167,7 +167,7 @@ text_color = "#ffffff" if is_dark else "#111111"
 widget_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.03)"
 widget_border = "rgba(255, 255, 255, 0.1)" if is_dark else "rgba(0, 0, 0, 0.08)"
 
-# --- Clean CSS Styling (מתוקן במיוחד לספארי ומובייל) ---
+# --- Clean CSS Styling (תיקון מלא לתפריט צד/סרגלים שנתקעים באמצע המסך באייפון וספארי) ---
 st.markdown(
     f"""
     <style>
@@ -180,6 +180,17 @@ st.markdown(
         -webkit-text-size-adjust: 100%;
     }}
     
+    /* תיקון קריטי לסרגלים ותפריטי צד באייפון/ספארי שלא יישארו באמצע המסך */
+    section[data-testid="stSidebar"] {{
+        background-color: {bg_color} !important;
+        position: relative !important;
+        z-index: 999999 !important;
+    }}
+    
+    div[data-testid="stSidebarNav"] {{
+        direction: rtl !important;
+    }}
+
     .ios-widget {{
         background: {widget_bg};
         backdrop-filter: blur(20px);
@@ -421,7 +432,7 @@ LOCAL_DATABASE = {
     "אגוזי מלך": {"cal": 654.0, "p": 15.2, "c": 13.7, "f": 65.2},
     "שקדים": {"cal": 579.0, "p": 21.1, "c": 21.6, "f": 49.9},
 
-    # --- 🍔 ג'אנק פוד, צ'יט מייל ומסעדות (נוסף לבקשתך) ---
+    # --- 🍔 ג'אנק פוד, צ'יט מייל ומסעדות ---
     "פיצה (משולש סטנדרטי)": {"cal": 270.0, "p": 12.0, "c": 30.0, "f": 11.0},
     "פיצה משפחתית (מגש שלם - ממוצע)": {"cal": 2200.0, "p": 90.0, "c": 240.0, "f": 95.0},
     "המבורגר במסעדה (כולל לחמנייה ורוטב - יחידה)": {"cal": 650.0, "p": 35.0, "c": 45.0, "f": 36.0},
