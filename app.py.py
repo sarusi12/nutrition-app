@@ -178,7 +178,7 @@ is_rtl = "Hebrew" in selected_lang or "עברית" in selected_lang
 dir_val = "rtl" if is_rtl else "ltr"
 text_align_val = "right" if is_rtl else "left"
 
-# --- Ultimate Global Dropdown, Calendar, Input & Dark Mode CSS Fixes ---
+# --- Ultimate Global Dropdown, Calendar, Date Input & Dark Mode CSS Fixes ---
 st.markdown(
     f"""
     <style>
@@ -197,16 +197,25 @@ st.markdown(
     }}
 
     /* תיקון מוחלט לכל תיבות הטקסט, הבחירה, תאריכים ומספרים */
-    input, textarea, select, div[data-baseweb="select"] > div, div[data-baseweb="input"] > div {{
+    input, textarea, select, div[data-baseweb="select"] > div, div[data-baseweb="input"] > div,
+    div[data-baseweb="base-input"] > div, div[data-baseweb="datepicker"] > div {{
         background-color: {input_bg_color} !important;
         color: {input_text_color} !important;
         -webkit-text-fill-color: {input_text_color} !important;
         border-color: {widget_border} !important;
     }}
 
+    /* תיקון ספציפי לשדות בחירת תאריך (Date Input) החיצוניים והפנימיים */
+    input[type="date"], input[type="text"], .stDateInput input {{
+        background-color: {input_bg_color} !important;
+        color: {input_text_color} !important;
+        -webkit-text-fill-color: {input_text_color} !important;
+    }}
+
     /* תיקון גורף לכל פופאפ, לוח שנה, תפריט נפתח (Selectbox Dropdown) ושכבות תפריט */
     div[data-baseweb="popover"], div[data-baseweb="calendar"], div[data-baseweb="menu"], 
-    div[role="dialog"], div[role="application"], ul[data-baseweb="menu"], div[role="listbox"] {{
+    div[role="dialog"], div[role="application"], ul[data-baseweb="menu"], div[role="listbox"],
+    div[data-baseweb="datepicker"] {{
         background-color: {input_bg_color} !important;
         color: {input_text_color} !important;
         border: 1px solid {widget_border} !important;
@@ -215,7 +224,8 @@ st.markdown(
 
     /* הבטחה שכל הטקסטים והאלמנטים בתוך הפופאפים והתפריטים הנפתחים יהיו לבנים וקריאים */
     div[data-baseweb="popover"] *, div[data-baseweb="calendar"] *, div[data-baseweb="menu"] *, 
-    div[role="dialog"] *, div[role="application"] *, ul[data-baseweb="menu"] *, div[role="listbox"] * {{
+    div[role="dialog"] *, div[role="application"] *, ul[data-baseweb="menu"] *, div[role="listbox"] *,
+    div[data-baseweb="datepicker"] * {{
         color: {input_text_color} !important;
         background-color: transparent !important;
     }}
@@ -243,7 +253,8 @@ st.markdown(
     }}
 
     /* תיקון ספציפי לטקסט בתוך שדות בחירה ותאריכים */
-    div[data-baseweb="select"] span, div[data-baseweb="select"] div, div[data-baseweb="input"] input, input[type="text"], input[type="date"] {{
+    div[data-baseweb="select"] span, div[data-baseweb="select"] div, div[data-baseweb="input"] input, 
+    div[data-baseweb="datepicker"] input {{
         color: {input_text_color} !important;
         -webkit-text-fill-color: {input_text_color} !important;
     }}
