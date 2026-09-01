@@ -1311,8 +1311,8 @@ elif selected_tab == t["tab_ai"]:
                         f"פרופיל: גיל {profile_data.get('age')}, משקל {profile_data.get('weight')} ק\"ג, מטרה: {profile_data.get('goal')}."
                     )
                     
-                    # הכנסת מפתח API תקף ישירות כאן (או הגדר אותו ב-st.secrets["GEMINI_API_KEY"])
-                    gemini_api_key = "AIzaSyAb8RN6J351f0wKRp1TDGkB9MhHDsluv0NYNDhDeIERVZKd6g"
+                    # המפתח שלך הוטמע כאן בהצלחה:
+                    gemini_api_key = "Ab8RN6JVZbIksWI0DCZ3LW5s0We56oTRUXEpFzC_pkKuq2ME0w"
                     api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_api_key}"
                     
                     full_prompt = f"אתה יועץ תזונה ואימונים ידידותי. ענה בעברית, בקצרה ובאופן מעשי, בהתבסס על הנתונים הבאים. אל תיתן ייעוץ רפואי.\n\n{context_str}\n\nשאלת המשתמש: {user_query}"
