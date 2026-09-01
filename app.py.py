@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import urllib.parse
 from datetime import date, datetime
+from json import dumps, loads
 from supabase import create_client, Client
 
 # --- Streamlit Page Config & Mobile/Cross-Browser Viewport Fix ---
@@ -1299,9 +1300,6 @@ elif selected_tab == t["tab_ai"]:
         else:
             with st.spinner("חושב..."):
                 try:
-                    import google.generativeai as genai
-                    genai.configure(api_key="AIzaSyAb8RN6J351f0wKRp1TDGkB9MhHDsluv0NYNDhDeIERVZKd6g")
-                    
                     ctx_log = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute().data
                     ctx_cal, ctx_p, ctx_c, ctx_f = safe_food_totals(ctx_log)
                     context_str = (
@@ -1312,10 +1310,27 @@ elif selected_tab == t["tab_ai"]:
                         f"שומן: {round(ctx_f)}g מתוך יעד {user_goals['target_fat']}g. "
                         f"פרופיל: גיל {profile_data.get('age')}, משקל {profile_data.get('weight')} ק\"ג, מטרה: {profile_data.get('goal')}."
                     )
-                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    
+                    api_key = "AIzaSyAb8RN6J351f0wKRp1TDGkB9MhHDsluv0NYNDhDeIERVZKd6g"
+                    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+                    
                     full_prompt = f"אתה יועץ תזונה ואימונים ידידותי. ענה בעברית, בקצרה ובאופן מעשי, בהתבסס על הנתונים הבאים. אל תיתן ייעוץ רפואי.\n\n{context_str}\n\nשאלת המשתמש: {user_query}"
-                    response = model.generate_content(full_prompt)
-                    st.markdown(f"### 💡 תשובת היועץ\n{response.text}")
+                    
+                    payload = {
+                        "contents": [{
+                            "parts": [{"text": full_prompt}]
+                        }]
+                    }
+                    
+                    headers = {"Content-Type": "application/json"}
+                    response = requests.post(api_url, headers=headers, data=dumps(payload), timeout=15)
+                    
+                    if response.status_code == 200:
+                        res_json = response.json()
+                        ai_answer = res_json["candidates"][0]["content"]["parts"][0]["text"]
+                        st.markdown(f"### 💡 תשובת היועץ\n{ai_answer}")
+                    else:
+                        st.error(f"שגיאת API: {response.status_code} - {response.text}")
                 except Exception as e:
                     st.error(f"שגיאה בפנייה ליועץ ה-AI: {e}")
 
