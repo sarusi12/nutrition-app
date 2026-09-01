@@ -1291,14 +1291,14 @@ elif selected_tab == t["tab_history"]:
         """, unsafe_allow_html=True)
 
 elif selected_tab == t["tab_ai"]:
-    st.subheader("🤖 יועץ תזונה AI (Google Gemini)")
+    st.subheader("🤖 יועץ תזונה חיצוני חכם (Llama 3 via Groq)")
     
     user_query = st.text_area("שאל כל שאלה בנוגע לתזונה, האימונים או ההתקדמות שלך:")
     if st.button("שלח שאלה"):
         if not user_query.strip():
             st.warning("נא להקליד שאלה.")
         else:
-            with st.spinner("חושב..."):
+            with st.spinner("היועץ מעבד את הנתונים שלך..."):
                 try:
                     ctx_log = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute().data
                     ctx_cal, ctx_p, ctx_c, ctx_f = safe_food_totals(ctx_log)
@@ -1311,29 +1311,36 @@ elif selected_tab == t["tab_ai"]:
                         f"פרופיל: גיל {profile_data.get('age')}, משקל {profile_data.get('weight')} ק\"ג, מטרה: {profile_data.get('goal')}."
                     )
                     
-                    # המפתח שלך הוטמע כאן בהצלחה:
-                    gemini_api_key = "Ab8RN6JVZbIksWI0DCZ3LW5s0We56oTRUXEpFzC_pkKuq2ME0w"
-                    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_api_key}"
+                    # הכנס כאן את מפתח ה-API החינמי שלך מ-Groq
+                    groq_api_key = "Ab8RN6JVZbIksWI0DCZ3LW5s0We56oTRUXEpFzC_pkKuq2ME0w"
+                    api_url = "https://api.groq.com/openai/v1/chat/completions"
                     
-                    full_prompt = f"אתה יועץ תזונה ואימונים ידידותי. ענה בעברית, בקצרה ובאופן מעשי, בהתבסס על הנתונים הבאים. אל תיתן ייעוץ רפואי.\n\n{context_str}\n\nשאלת המשתמש: {user_query}"
+                    system_prompt = "אתה יועץ תזונה וכושר מקצועי וידידותי. ענה בעברית, בקצרה ובאופן מעשי, בהתבסס על הנתונים האישיים של המשתמש. אל תיתן ייעוץ רפואי."
                     
                     payload = {
-                        "contents": [{
-                            "parts": [{"text": full_prompt}]
-                        }]
+                        "model": "llama3-70b-8192",  # מודל חזק מאוד בעברית
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": f"{context_str}\n\nשאלת המשתמש: {user_query}"}
+                        ],
+                        "temperature": 0.7
                     }
                     
-                    headers = {"Content-Type": "application/json"}
+                    headers = {
+                        "Authorization": f"Bearer {groq_api_key}",
+                        "Content-Type": "application/json"
+                    }
+                    
                     response = requests.post(api_url, headers=headers, data=dumps(payload), timeout=15)
                     
                     if response.status_code == 200:
                         res_json = response.json()
-                        ai_answer = res_json["candidates"][0]["content"]["parts"][0]["text"]
+                        ai_answer = res_json["choices"][0]["message"]["content"]
                         st.markdown(f"### 💡 תשובת היועץ\n{ai_answer}")
                     else:
-                        st.error(f"שגיאת תקשורת מול גוגל: {response.text}")
+                        st.error(f"שגיאה בתקשורת מול השרת החיצוני: {response.text}")
                 except Exception as e:
-                    st.error(f"שגיאה בפנייה ליועץ ה-AI: {e}")
+                    st.error(f"שגיאה בפנייה ליועץ: {e}")
 
 elif selected_tab == t["tab_log"]:
     st.subheader(f"תיעוד ארוחות ושתייה לתאריך: {selected_date}")
@@ -1517,3 +1524,4 @@ elif selected_tab == t["tab_settings"]:
                     st.error(f"Error updating account: {e}")
             else:
                 st.info("No changes made.")
+                
