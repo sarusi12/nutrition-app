@@ -4,9 +4,6 @@ import urllib.parse
 from datetime import date, datetime
 from supabase import create_client, Client
 
-# --- המפתח שלך משובץ כאן ישירות ---
-HARDCODED_GEMINI_KEY = "AQ.Ab8RN6J351f0wKRp1TDGkB9MhHDsluv0NYNDhDeIERVZKd6g"
-
 # --- Streamlit Page Config & Mobile/Cross-Browser Viewport Fix ---
 st.set_page_config(page_title="NutriFlow / מחשבון תזונה", layout="wide", initial_sidebar_state="expanded")
 
@@ -419,9 +416,7 @@ supabase = init_supabase()
 
 # --- Google Gemini AI Client Initialization ---
 def get_gemini_client():
-    api_key = HARDCODED_GEMINI_KEY.strip() or st.secrets.get("GOOGLE_API_KEY", st.secrets.get("GEMINI_API_KEY", None))
-    if not api_key:
-        return None
+    api_key = "AIzaSyAb8RN6J351f0wKRp1TDGkB9MhHDsluv0NYNDhDeIERVZKd6g"
     try:
         import google.generativeai as genai
         genai.configure(api_key=api_key)
