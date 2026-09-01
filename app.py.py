@@ -4,6 +4,9 @@ import urllib.parse
 from datetime import date, datetime
 from supabase import create_client, Client
 
+# --- הכנס כאן את מפתח ה-API שלך פעם אחת וזה יעבוד תמיד ---
+HARDCODED_GEMINI_KEY = "הדבק_כאן_את_המפתח_שלך"
+
 # --- Streamlit Page Config & Mobile/Cross-Browser Viewport Fix ---
 st.set_page_config(page_title="NutriFlow / מחשבון תזונה", layout="wide", initial_sidebar_state="expanded")
 
@@ -417,9 +420,9 @@ supabase = init_supabase()
 # --- Google Gemini AI Client Initialization ---
 def get_gemini_client():
     api_key = (
-        st.session_state.get("custom_google_api_key", "").strip() or
-        st.secrets.get("GOOGLE_API_KEY", st.secrets.get("GEMINI_API_KEY", None))
-    )
+        HARDCODED_GEMINI_KEY.strip() if HARDCODED_GEMINI_KEY != "הדבק_כאן_את_המפתח_שלך" else ""
+    ) or st.secrets.get("GOOGLE_API_KEY", st.secrets.get("GEMINI_API_KEY", None))
+    
     if not api_key:
         return None
     try:
@@ -1309,14 +1312,14 @@ elif selected_tab == t["tab_ai"]:
     gemini_client = get_gemini_client()
     
     if not gemini_client:
-        st.info("💡 שים לב: כדי להפעיל את יועץ ה-AI, ניתן להכניס מפתח Google API תחת לשונית ההגדרות (⚙️ הגדרות) או להגדיר אותו בקובץ ה-secrets תחת `GOOGLE_API_KEY`.")
+        st.error("⚠️ מפתח Google API לא הוגדר בקוד. אנא ערוך את הקובץ והכנס את המפתח בשורה 7 (`HARDCODED_GEMINI_KEY`).")
 
     user_query = st.text_area("שאל כל שאלה בנוגע לתזונה, האימונים או ההתקדמות שלך:")
     if st.button("שלח שאלה"):
         if not user_query.strip():
             st.warning("נא להקליד שאלה.")
         elif not gemini_client:
-            st.error("לא ניתן לפנות ליועץ - חסר מפתח Google API. הכנס אותו בהגדרות המערכת.")
+            st.error("לא ניתן לפנות ליועץ - חסר מפתח תקף בקוד.")
         else:
             with st.spinner("חושב..."):
                 try:
@@ -1484,16 +1487,10 @@ elif selected_tab == t["tab_settings"]:
         
         theme_choice = st.selectbox(t["theme_label"], t["theme_options"], index=t["theme_options"].index(st.session_state["theme_mode"]) if st.session_state["theme_mode"] in t["theme_options"] else 0)
         
-        st.markdown("---")
-        st.markdown("🔑 **הגדרת מפתח Google API (לשירותי יועץ AI)**")
-        current_custom_key = st.session_state.get("custom_google_api_key", "")
-        api_input_field = st.text_input("הכנס Google API Key (אופציונלי):", value=current_custom_key, type="password")
-
         submit_settings = st.form_submit_button(t["save_settings"])
         
         if submit_settings:
             st.session_state["theme_mode"] = theme_choice
-            st.session_state["custom_google_api_key"] = api_input_field.strip()
             supabase.table("user_profiles").update({
                 "age": int(s_age), "height": float(s_height), "weight": float(s_weight)
             }).eq("user_id", user_id).execute()
