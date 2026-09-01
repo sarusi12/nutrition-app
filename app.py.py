@@ -5,7 +5,7 @@ from datetime import date, datetime
 from supabase import create_client, Client
 
 # --- הכנס כאן את מפתח ה-API שלך פעם אחת וזה יעבוד תמיד ---
-HARDCODED_GEMINI_KEY = "הדבק_כאן_את_המפתח_שלך"
+HARDCODED_GEMINI_KEY = "Ab8RN6J351fw0KRp1TDGkBV9MhHDsluv0NYNDHdEnIERVZKd6g"
 
 # --- Streamlit Page Config & Mobile/Cross-Browser Viewport Fix ---
 st.set_page_config(page_title="NutriFlow / מחשבון תזונה", layout="wide", initial_sidebar_state="expanded")
