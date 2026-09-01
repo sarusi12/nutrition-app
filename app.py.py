@@ -4,8 +4,8 @@ import urllib.parse
 from datetime import date, datetime
 from supabase import create_client, Client
 
-# --- הכנס כאן את מפתח ה-API שלך פעם אחת וזה יעבוד תמיד ---
-HARDCODED_GEMINI_KEY = "Ab8RN6J351fw0KRp1TDGkBV9MhHDsluv0NYNDHdEnIERVZKd6g"
+# --- המפתח שלך משובץ כאן ישירות ---
+HARDCODED_GEMINI_KEY = "AQ.Ab8RN6J351f0wKRp1TDGkB9MhHDsluv0NYNDhDeIERVZKd6g"
 
 # --- Streamlit Page Config & Mobile/Cross-Browser Viewport Fix ---
 st.set_page_config(page_title="NutriFlow / מחשבון תזונה", layout="wide", initial_sidebar_state="expanded")
@@ -419,10 +419,7 @@ supabase = init_supabase()
 
 # --- Google Gemini AI Client Initialization ---
 def get_gemini_client():
-    api_key = (
-        HARDCODED_GEMINI_KEY.strip() if HARDCODED_GEMINI_KEY != "הדבק_כאן_את_המפתח_שלך" else ""
-    ) or st.secrets.get("GOOGLE_API_KEY", st.secrets.get("GEMINI_API_KEY", None))
-    
+    api_key = HARDCODED_GEMINI_KEY.strip() or st.secrets.get("GOOGLE_API_KEY", st.secrets.get("GEMINI_API_KEY", None))
     if not api_key:
         return None
     try:
@@ -1310,9 +1307,6 @@ elif selected_tab == t["tab_history"]:
 elif selected_tab == t["tab_ai"]:
     st.subheader("🤖 יועץ תזונה AI (Google Gemini)")
     gemini_client = get_gemini_client()
-    
-    if not gemini_client:
-        st.error("⚠️ מפתח Google API לא הוגדר בקוד. אנא ערוך את הקובץ והכנס את המפתח בשורה 7 (`HARDCODED_GEMINI_KEY`).")
 
     user_query = st.text_area("שאל כל שאלה בנוגע לתזונה, האימונים או ההתקדמות שלך:")
     if st.button("שלח שאלה"):
