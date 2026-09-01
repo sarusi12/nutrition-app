@@ -414,16 +414,6 @@ def init_supabase() -> Client:
 
 supabase = init_supabase()
 
-# --- Google Gemini AI Client Initialization ---
-def get_gemini_client():
-    api_key = "AIzaSyAb8RN6J351f0wKRp1TDGkB9MhHDsluv0NYNDhDeIERVZKd6g"
-    try:
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
-        return genai
-    except Exception:
-        return None
-
 # --- מאגר מובנה ענק ועשיר (כולל משקאות, מים וקפה) ---
 LOCAL_DATABASE = {
     "מים (כוס / 250 מ\"ל)": {"cal": 0.0, "p": 0.0, "c": 0.0, "f": 0.0},
@@ -1301,17 +1291,17 @@ elif selected_tab == t["tab_history"]:
 
 elif selected_tab == t["tab_ai"]:
     st.subheader("🤖 יועץ תזונה AI (Google Gemini)")
-    gemini_client = get_gemini_client()
-
+    
     user_query = st.text_area("שאל כל שאלה בנוגע לתזונה, האימונים או ההתקדמות שלך:")
     if st.button("שלח שאלה"):
         if not user_query.strip():
             st.warning("נא להקליד שאלה.")
-        elif not gemini_client:
-            st.error("לא ניתן לפנות ליועץ - חסר מפתח תקף בקוד.")
         else:
             with st.spinner("חושב..."):
                 try:
+                    import google.generativeai as genai
+                    genai.configure(api_key="AIzaSyAb8RN6J351f0wKRp1TDGkB9MhHDsluv0NYNDhDeIERVZKd6g")
+                    
                     ctx_log = supabase.table("food_log").select("*, food_items(*)").eq("user_id", user_id).eq("date", selected_date).execute().data
                     ctx_cal, ctx_p, ctx_c, ctx_f = safe_food_totals(ctx_log)
                     context_str = (
@@ -1322,7 +1312,7 @@ elif selected_tab == t["tab_ai"]:
                         f"שומן: {round(ctx_f)}g מתוך יעד {user_goals['target_fat']}g. "
                         f"פרופיל: גיל {profile_data.get('age')}, משקל {profile_data.get('weight')} ק\"ג, מטרה: {profile_data.get('goal')}."
                     )
-                    model = gemini_client.GenerativeModel('gemini-2.5-flash')
+                    model = genai.GenerativeModel('gemini-1.5-flash')
                     full_prompt = f"אתה יועץ תזונה ואימונים ידידותי. ענה בעברית, בקצרה ובאופן מעשי, בהתבסס על הנתונים הבאים. אל תיתן ייעוץ רפואי.\n\n{context_str}\n\nשאלת המשתמש: {user_query}"
                     response = model.generate_content(full_prompt)
                     st.markdown(f"### 💡 תשובת היועץ\n{response.text}")
